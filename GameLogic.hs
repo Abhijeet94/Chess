@@ -15,6 +15,11 @@ import qualified Control.Monad.State as S
 
 -------------------------------------------------------------------------
 
+main :: IO ()
+main = return ()
+
+-------------------------------------------------------------------------
+
 -- [QUESTION] Do we need a separate module for Pieces / how would you recommend we refactor this?
 
 data Location = Loc Int Int deriving (Eq, Ord, Show)
