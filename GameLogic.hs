@@ -11,7 +11,7 @@ import Control.Applicative (Alternative(..),liftA3)
 import Control.Monad ()
 
 import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
-import qualified Control.Monad.State as S
+import qualified Control.Monad.State as State
 
 -------------------------------------------------------------------------
 
@@ -32,10 +32,9 @@ data Game = Game { board :: Board, current :: Player }
 data End = Win Player | Tie
  
 -- [QUESTION] What should the second argument to State be in the below type?
-type Chessboard = State Board Location
+-- Using Location as of now.
 
-newtype BoardT s m a = MkBoardT { runBoardT :: s -> m (a, s) }
-type StateBoard s = BoardT s IO
+type ChessBoard = StateT Board IO
 -- 
 
 initialGame :: Game
@@ -63,27 +62,28 @@ handleTurn :: String -> IO()
 handleTurn = undefined
 
 -- PrettyPrint our board
-printBoard :: Chessboard -> IO()
+printBoard :: ChessBoard Location -> IO()
 printBoard = undefined
 
 -- look for checkmate cases / tie cases
 -- if there are none, return Nothing
 -- otherwise return Just Win White / Just Win Black / Just Tie
-checkForWin :: Chessboard -> Maybe End
+checkForWin :: ChessBoard Location -> Maybe End
 checkForWin = undefined
 
 -- Takes in a Location and uses getPiece to get the piece at the Location
 -- Then takes in a target Location and if the move is valid (use checkMove), updates it
 -- If there is a piece at the target Location then capture it 
 -- at the end, movePiece should set the turn to the next player
-movePiece :: Location -> Location -> Chessboard
+movePiece :: Location -> Location -> ChessBoard Location
 movePiece from to = undefined
 
 -- Takes in a Piece, its current Location, and a proposed Location and returns 
 -- whether or not the Piece can move to that Location 
 -- Has to account for: presence of other pieces
-checkMove :: Chessboard -> Piece -> Location -> Location -> Bool
-checkMove cb (P _ King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) where dist = (x1 - x2)^2 + (y1 - y2)^2
+checkMove :: ChessBoard Location -> Piece -> Location -> Location -> Bool
+checkMove cb (P _ King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) 
+                                    where dist = (x1 - x2)^2 + (y1 - y2)^2
 checkMove cb (P _ Queen) (Loc x1 y1) (Loc x2 y2) = undefined 
 checkMove cb (P _ Bishop) (Loc x1 y1) (Loc x2 y2) = undefined
 checkMove cb (P _ Knight) (Loc x1 y1) (Loc x2 y2) = undefined
@@ -91,7 +91,7 @@ checkMove cb (P _ Rook) (Loc x1 y1) (Loc x2 y2) = undefined
 checkMove cb (P _ Pawn) (Loc x1 y1) (Loc x2 y2) = undefined
 
 -- just gets a Piece from the Location
--- [QUESTION] Do we need the Chessboard here? 
-getPiece :: Chessboard -> Location -> Maybe Piece
+-- [QUESTION] Do we need the ChessBoard here? 
+getPiece :: ChessBoard Location -> Location -> Maybe Piece
 getPiece cb from = undefined
 
