@@ -34,6 +34,8 @@ data End = Win Player | Tie
 -- [QUESTION] What should the second argument to State be in the below type?
 -- Using Location as of now.
 
+-- [QUESTION] How do we propagate the error with this? use a MaybeT transformer?
+
 type ChessBoard = StateT Board IO
 -- 
 
@@ -78,10 +80,12 @@ movePiece :: Location -> Location -> ChessBoard Location
 movePiece from to | from == to = return to
 movePiece from to | otherwise  =    do
                                     initialBoard <-  S.get
-                                    --to <- movePieceOnce (stepSize initialBoard) (initialBoard)
-                                    return to 
-                                    where
-                                    stepSize is = getPiece is from
+                                    case (getPiece initialBoard from) of 
+                                        Nothing -> return from 
+                                        (Just pc) -> do
+                                                        toImm <- movePieceOnce from (getImmNextLocation initialBoard pc from to)
+                                                        movePiece toImm to
+-- if there is a problem, it might loop infinitely because the error is not propagated up
 
 movePieceOnce :: Location -> Location -> ChessBoard Location
 movePieceOnce from to = do
@@ -96,8 +100,46 @@ movePieceOnce from to = do
                                                                 then return from
                                                                 else S.put (Map.insert from Nothing initialBoard) >>
                                                                     S.put (Map.insert to (Just (P colorFrom pcFrom)) initialBoard) >>
-                                                                    return to
+                                                                    return to                                    
 
+getImmNextLocation :: Board -> Piece -> Location -> Location -> Location
+getImmNextLocation bd (P _ Bishop) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
+                                                                where x' = if x2 > x1
+                                                                            then x1 + 1
+                                                                            else x1 - 1
+                                                                      y' = if y2 > y1
+                                                                            then y1 + 1
+                                                                            else y1 - 1
+
+getImmNextLocation bd (P _ Rook) l1@(Loc x1 y1) l2@(Loc x2 y2) =  Loc x' y'
+                                                                where x' = if x2 > x1
+                                                                            then x1 + 1
+                                                                            else if x2 == x1
+                                                                                then x1
+                                                                                else x1 - 1
+                                                                      y' = if y2 > y1
+                                                                            then y1 + 1
+                                                                            else if y2 == y1
+                                                                                then y1
+                                                                                else y1 - 1                                                                                
+getImmNextLocation bd (P _ King) l1@(Loc x1 y1) l2@(Loc x2 y2) =  l2
+getImmNextLocation bd (P _ Knight) l1@(Loc x1 y1) l2@(Loc x2 y2) =  l2
+getImmNextLocation bd (P _ Pawn) l1@(Loc x1 y1) l2@(Loc x2 y2) =  if x1 /= x2
+                                                                    then l2
+                                                                    else if (abs (y2 - y1)) == 1
+                                                                        then l2
+                                                                        else Loc x1 (y1 + (y2-y1))
+getImmNextLocation bd (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
+                                                                where x' = if x2 > x1
+                                                                            then x1 + 1
+                                                                            else if x2 == x1
+                                                                                then x1
+                                                                                else x1 - 1
+                                                                      y' = if y2 > y1
+                                                                            then y1 + 1
+                                                                            else if y2 == y1
+                                                                                then y1
+                                                                                else y1 - 1                                                                        
 
 -- Takes in a Piece and a proposed Location and returns 
 -- whether or not the Piece can move to that Location 
