@@ -78,17 +78,23 @@ checkForWin = undefined
 movePiece :: Location -> Location -> ChessBoard Location
 movePiece from to = undefined
 
--- Takes in a Piece, its current Location, and a proposed Location and returns 
+-- Takes in a Piece and a proposed Location and returns 
 -- whether or not the Piece can move to that Location 
--- Has to account for: presence of other pieces
-checkMove :: ChessBoard Location -> Piece -> Location -> Location -> Bool
-checkMove cb (P _ King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) 
+-- according to the rules for each piece
+validMove :: Piece -> Location -> Location -> Bool
+validMove (P _ King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) 
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
-checkMove cb (P _ Queen) (Loc x1 y1) (Loc x2 y2) = undefined 
-checkMove cb (P _ Bishop) (Loc x1 y1) (Loc x2 y2) = undefined
-checkMove cb (P _ Knight) (Loc x1 y1) (Loc x2 y2) = undefined
-checkMove cb (P _ Rook) (Loc x1 y1) (Loc x2 y2) = undefined
-checkMove cb (P _ Pawn) (Loc x1 y1) (Loc x2 y2) = undefined
+validMove (P _ Queen) (Loc x1 y1) (Loc x2 y2) = validMove (P White Bishop) (Loc x1 y1) (Loc x2 y2) ||
+                                                validMove (P White Rook) (Loc x1 y1) (Loc x2 y2)
+validMove (P _ Bishop) (Loc x1 y1) (Loc x2 y2) = ((abs (x1 - x2)) == (abs (y1 - y2))) && (abs (x1 - x2)) > 0
+validMove (P _ Knight) (Loc x1 y1) (Loc x2 y2) =    (((abs (x1 - x2)) == 2) && ((abs (y1 - y2)) == 1)) ||
+                                                    (((abs (y1 - y2)) == 2) && ((abs (x1 - x2)) == 1))
+validMove (P _ Rook) (Loc x1 y1) (Loc x2 y2) = ((x1 == x2) && (abs (y1 - y2)) > 0) 
+                                            || ((y1 == y2) && (abs (x1 - x2)) > 0)
+validMove (P White Pawn) (Loc x1 y1) (Loc x2 y2) = ((x1 == x2) && ((y2 - y1 == 1) || ((y1 == 2) && (y2 - y1 == 2)))) ||
+                                                    (((abs (x1 - x2)) == 1) && (y2 - y1 == 1))
+validMove (P Black Pawn) (Loc x1 y1) (Loc x2 y2) = ((x1 == x2) && ((y2 - y1 == -1) || ((y1 == 7) && (y2 - y1 == -2)))) ||
+                                                    (((abs (x1 - x2)) == 1) && (y2 - y1 == -1))                                                    
 
 -- just gets a Piece from the Location
 -- [QUESTION] Do we need the ChessBoard here? 
