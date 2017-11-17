@@ -15,8 +15,10 @@ import qualified Control.Monad.State as S
 
 -------------------------------------------------------------------------
 
-main :: IO ()
-main = return ()
+-- [QUESTION] Is this return type allowed?
+
+main :: ChessBoard ()
+main = playGame initialGame
 
 -------------------------------------------------------------------------
 
@@ -26,7 +28,7 @@ data Location = Loc Int Int deriving (Eq, Ord, Show)
 data Player = White | Black deriving (Eq)
 data PieceType = King | Queen | Bishop | Knight | Rook | Pawn
 data Piece = P Player PieceType
-type Board = Map Location (Maybe Piece)
+type Board = Map Location (Maybe Piece) 
 -- [QUESTION] Where should we use Game?  Where does the example use Game?
 data Game = Game { board :: Board, current :: Player }
 data End = Win Player | Tie
@@ -42,15 +44,21 @@ type ChessBoard = StateT Board IO
 initialGame :: Game
 initialGame = undefined
 
+getMove :: Game -> ChessBoard Location
+getMove game = undefined
+
 -- White to move:
 -- E4 E5
 -- print board
 -- Black to move:
 
 -- takes in a string of format LetterNumber and returns the corresponding Location
-inputToLocation :: String -> Maybe Location
+inputToLocation :: String -> Maybe (Location, Location)
 inputToLocation (x:y:[]) = undefined --if the string is 2 characters then convert it appropriately
 inputToLocation _ = Nothing
+
+playGame :: Game -> ChessBoard ()
+playGame game = undefined
 
 -- takes in a string of format "E4 E5" and if this is a valid action:
 -- updates board with movePiece
@@ -61,21 +69,39 @@ inputToLocation _ = Nothing
 -- ask for correct input
 -- [QUESTION] How do we structure this?
 handleTurn :: String -> ChessBoard ()
-handleTurn = undefined
+handleTurn s = case (inputToLocation s) of 
+                Nothing -> S.liftIO $ putStrLn "Incorrect input"
+                (Just (from@(Loc x1 y1), to@(Loc x2 y2))) -> do
+                        initialBoard <-  S.get
+                        case (getPiece initialBoard from) of 
+                            Nothing -> S.liftIO $ putStrLn "Incorrect input"
+                            (Just pc) -> if (validMove pc from to)
+                                then do
+                                        bd <- movePiece from to
+                                        newBoard <- S.get
+                                        -- [QUESTION] how to check if the move was successfully made?
+                                        printBoard newBoard
+                                        case (checkForWin newBoard) of 
+                                            (Just (Win White)) -> S.liftIO $ putStrLn "White wins"
+                                            (Just (Win Black)) -> S.liftIO $ putStrLn "Black wins"
+                                            (Just Tie) -> S.liftIO $ putStrLn "Tie. Game Over."
+                                            Nothing -> return ()
+                                else S.liftIO $ putStrLn "Incorrect input"
 
 -- PrettyPrint our board
-printBoard :: ChessBoard Location -> ChessBoard ()
+printBoard :: Board -> ChessBoard ()
 printBoard = undefined
 
 -- look for checkmate cases / tie cases
 -- if there are none, return Nothing
 -- otherwise return Just Win White / Just Win Black / Just Tie
-checkForWin :: ChessBoard Location -> Maybe End
+checkForWin :: Board -> Maybe End
 checkForWin = undefined
 
 -- Takes in a Location and uses getPiece to get the piece at the Location
 -- updates it
 -- If there is a piece at the target Location then capture it 
+-- TODO - Handle special scenarios like Castling, en passant etc
 movePiece :: Location -> Location -> ChessBoard Location
 movePiece from to | from == to = return to
 movePiece from to | otherwise  =    do
