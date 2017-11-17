@@ -65,7 +65,6 @@ inputToLocation _ = Nothing
 -- sets turn to next player
 -- else: 
 -- ask for correct input
--- [QUESTION] How do we structure this?
 playGame :: Game -> ChessBoard ()
 playGame game = do
     printBoard (board game)
@@ -74,7 +73,7 @@ playGame game = do
         (Just (Win Black)) -> S.liftIO $ putStrLn "Black wins"
         (Just Tie) -> S.liftIO $ putStrLn "Tie. Game Over."
         Nothing -> do
-            S.liftIO $ putStrLn $ "Player " ++ (show (current game)) ++ "'s turn"
+            S.liftIO $ putStr $ "Player " ++ (show (current game)) ++ "'s turn"
             case (inputToLocation (getNextMove)) of 
                 Nothing -> S.liftIO $ putStrLn "Incorrect input"
                 (Just (from@(Loc x1 y1), to@(Loc x2 y2))) -> do
@@ -86,13 +85,27 @@ playGame game = do
                                     case (handleTurn game from to) of
                                         (Just game') -> playGame game'
                                         Nothing -> playGame game
-                                    -- [QUESTION] how to check if the move was successfully made?
                                 else S.liftIO $ putStrLn "Incorrect input"
 
 -- makes the actual move
 -- sets the current player after a move successfully completes
+-- [QUESTION] how to check if the move was successfully made?
 handleTurn :: Game -> Location -> Location -> Maybe Game
 handleTurn game from to = undefined
+                        --if to' == to
+                        --    then if (current game) == White
+                        --            then (Just (Game newBoard Black))
+                        --            else (Just (Game newBoard White))
+                        --    else Nothing
+                        --    where
+                        --    (to', newBoard) = case (S.runStateT makeMove (board game)) of 
+                        --                        (IO (a, b)) -> (a, b)
+
+                        --    makeMove :: ChessBoard Location
+                        --    makeMove =  do
+                        --                to' <- movePiece from to
+                        --                return to'
+
 
 -- PrettyPrint our board
 printBoard :: Board -> ChessBoard ()
