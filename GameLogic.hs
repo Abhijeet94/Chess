@@ -11,7 +11,7 @@ import Control.Applicative (Alternative(..),liftA3)
 import Control.Monad ()
 
 import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
-import qualified Control.Monad.State as State
+import qualified Control.Monad.State as S
 
 -------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ main = return ()
 -- [QUESTION] Do we need a separate module for Pieces / how would you recommend we refactor this?
 
 data Location = Loc Int Int deriving (Eq, Ord, Show)
-data Player = White | Black
+data Player = White | Black deriving (Eq)
 data PieceType = King | Queen | Bishop | Knight | Rook | Pawn
 data Piece = P Player PieceType
 type Board = Map Location (Maybe Piece)
@@ -58,11 +58,11 @@ inputToLocation _ = Nothing
 -- else: 
 -- ask for correct input
 -- [QUESTION] How do we structure this?
-handleTurn :: String -> IO()
+handleTurn :: String -> ChessBoard ()
 handleTurn = undefined
 
 -- PrettyPrint our board
-printBoard :: ChessBoard Location -> IO()
+printBoard :: ChessBoard Location -> ChessBoard ()
 printBoard = undefined
 
 -- look for checkmate cases / tie cases
@@ -72,11 +72,32 @@ checkForWin :: ChessBoard Location -> Maybe End
 checkForWin = undefined
 
 -- Takes in a Location and uses getPiece to get the piece at the Location
--- Then takes in a target Location and if the move is valid (use checkMove), updates it
+-- updates it
 -- If there is a piece at the target Location then capture it 
--- at the end, movePiece should set the turn to the next player
 movePiece :: Location -> Location -> ChessBoard Location
-movePiece from to = undefined
+movePiece from to | from == to = return to
+movePiece from to | otherwise  =    do
+                                    initialBoard <-  S.get
+                                    --to <- movePieceOnce (stepSize initialBoard) (initialBoard)
+                                    return to 
+                                    where
+                                    stepSize is = getPiece is from
+
+movePieceOnce :: Location -> Location -> ChessBoard Location
+movePieceOnce from to = do
+                        initialBoard <- S.get
+                        case (getPiece initialBoard from) of
+                            Nothing -> return from
+                            (Just (P colorFrom pcFrom)) -> case (getPiece initialBoard to) of
+                                                            Nothing -> S.put (Map.insert from Nothing initialBoard) >>
+                                                                    S.put (Map.insert to (Just (P colorFrom pcFrom)) initialBoard) >>
+                                                                    return to
+                                                            (Just (P colorTo pcTo)) -> if (colorFrom == colorTo)
+                                                                then return from
+                                                                else S.put (Map.insert from Nothing initialBoard) >>
+                                                                    S.put (Map.insert to (Just (P colorFrom pcFrom)) initialBoard) >>
+                                                                    return to
+
 
 -- Takes in a Piece and a proposed Location and returns 
 -- whether or not the Piece can move to that Location 
@@ -98,6 +119,8 @@ validMove (P Black Pawn) (Loc x1 y1) (Loc x2 y2) = ((x1 == x2) && ((y2 - y1 == -
 
 -- just gets a Piece from the Location
 -- [QUESTION] Do we need the ChessBoard here? 
-getPiece :: ChessBoard Location -> Location -> Maybe Piece
-getPiece cb from = undefined
+getPiece :: Board -> Location -> (Maybe Piece)
+getPiece mp from = do
+                    p <- Map.lookup from mp
+                    p
 
