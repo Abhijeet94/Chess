@@ -25,7 +25,7 @@ main = playGame initialGame
 -- [QUESTION] Do we need a separate module for Pieces / how would you recommend we refactor this?
 
 data Location = Loc Int Int deriving (Eq, Ord, Show)
-data Player = White | Black deriving (Eq)
+data Player = White | Black deriving (Eq, Show)
 data PieceType = King | Queen | Bishop | Knight | Rook | Pawn
 data Piece = P Player PieceType
 type Board = Map Location (Maybe Piece) 
@@ -44,8 +44,8 @@ type ChessBoard = StateT Board IO
 initialGame :: Game
 initialGame = undefined
 
-getMove :: Game -> ChessBoard Location
-getMove game = undefined
+getNextMove :: String
+getNextMove = undefined
 
 -- White to move:
 -- E4 E5
@@ -57,8 +57,6 @@ inputToLocation :: String -> Maybe (Location, Location)
 inputToLocation (x:y:[]) = undefined --if the string is 2 characters then convert it appropriately
 inputToLocation _ = Nothing
 
-playGame :: Game -> ChessBoard ()
-playGame game = undefined
 
 -- takes in a string of format "E4 E5" and if this is a valid action:
 -- updates board with movePiece
@@ -68,25 +66,33 @@ playGame game = undefined
 -- else: 
 -- ask for correct input
 -- [QUESTION] How do we structure this?
-handleTurn :: String -> ChessBoard ()
-handleTurn s = case (inputToLocation s) of 
+playGame :: Game -> ChessBoard ()
+playGame game = do
+    printBoard (board game)
+    case (checkForWin (board game)) of 
+        (Just (Win White)) -> S.liftIO $ putStrLn "White wins"
+        (Just (Win Black)) -> S.liftIO $ putStrLn "Black wins"
+        (Just Tie) -> S.liftIO $ putStrLn "Tie. Game Over."
+        Nothing -> do
+            S.liftIO $ putStrLn $ "Player " ++ (show (current game)) ++ "'s turn"
+            case (inputToLocation (getNextMove)) of 
                 Nothing -> S.liftIO $ putStrLn "Incorrect input"
                 (Just (from@(Loc x1 y1), to@(Loc x2 y2))) -> do
                         initialBoard <-  S.get
                         case (getPiece initialBoard from) of 
                             Nothing -> S.liftIO $ putStrLn "Incorrect input"
-                            (Just pc) -> if (validMove pc from to)
+                            (Just pc@(P pl _)) -> if ((validMove pc from to) && (pl == current game))
                                 then do
-                                        bd <- movePiece from to
-                                        newBoard <- S.get
-                                        -- [QUESTION] how to check if the move was successfully made?
-                                        printBoard newBoard
-                                        case (checkForWin newBoard) of 
-                                            (Just (Win White)) -> S.liftIO $ putStrLn "White wins"
-                                            (Just (Win Black)) -> S.liftIO $ putStrLn "Black wins"
-                                            (Just Tie) -> S.liftIO $ putStrLn "Tie. Game Over."
-                                            Nothing -> return ()
+                                    case (handleTurn game from to) of
+                                        (Just game') -> playGame game'
+                                        Nothing -> playGame game
+                                    -- [QUESTION] how to check if the move was successfully made?
                                 else S.liftIO $ putStrLn "Incorrect input"
+
+-- makes the actual move
+-- sets the current player after a move successfully completes
+handleTurn :: Game -> Location -> Location -> Maybe Game
+handleTurn game from to = undefined
 
 -- PrettyPrint our board
 printBoard :: Board -> ChessBoard ()
