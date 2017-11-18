@@ -15,8 +15,8 @@ import qualified Text.PrettyPrint as PP
 import Control.Applicative (Alternative(..),liftA3)
 import Control.Monad (liftM, liftM2)
 
-import State (State)
-import qualified State as S
+import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
+import qualified Control.Monad.State as S
 
 import GameLogic
 
