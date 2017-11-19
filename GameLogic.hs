@@ -26,8 +26,8 @@ main = playGame initialGame
 
 data Location = Loc Int Int deriving (Eq, Ord, Show)
 data Player = White | Black deriving (Eq, Show)
-data PieceType = King | Queen | Bishop | Knight | Rook | Pawn
-data Piece = P Player PieceType
+data PieceType = King | Queen | Bishop | Knight | Rook | Pawn deriving (Eq, Show)
+data Piece = P Player PieceType deriving (Eq, Show)
 type Board = Map Location (Maybe Piece) 
 -- [QUESTION] Where should we use Game?  Where does the example use Game?
 data Game = Game { board :: Board, current :: Player }
@@ -53,10 +53,10 @@ getNextMove = undefined
 -- Black to move:
 
 -- takes in a string of format LetterNumber and returns the corresponding Location
-inputToLocation :: String -> Maybe (Location, Location)
+-- this needs to be changed to get both of them! [TODO]
+inputToLocation :: String -> Maybe (Location,Location)
 inputToLocation (x:y:[]) = undefined --if the string is 2 characters then convert it appropriately
 inputToLocation _ = Nothing
-
 
 -- takes in a string of format "E4 E5" and if this is a valid action:
 -- updates board with movePiece
