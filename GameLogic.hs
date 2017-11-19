@@ -32,13 +32,15 @@ type Board = Map Location (Maybe Piece)
 -- [QUESTION] Where should we use Game?  Where does the example use Game?
 data Game = Game { board :: Board, current :: Player }
 data End = Win Player | Tie
+
+newtype Move = Move {from : Location, to : Location}
  
 -- [QUESTION] What should the second argument to State be in the below type?
 -- Using Location as of now.
 
 -- [QUESTION] How do we propagate the error with this? use a MaybeT transformer?
 
-type ChessBoard = StateT Board IO
+type ChessBoard = StateT Game (Either String)
 -- 
 
 initialGame :: Game
@@ -65,7 +67,7 @@ inputToLocation _ = Nothing
 -- sets turn to next player
 -- else: 
 -- ask for correct input
-playGame :: Game -> ChessBoard ()
+playGame :: IO ()
 playGame game = do
     printBoard (board game)
     case (checkForWin (board game)) of 
@@ -90,7 +92,8 @@ playGame game = do
 -- makes the actual move
 -- sets the current player after a move successfully completes
 -- [QUESTION] how to check if the move was successfully made?
-handleTurn :: Game -> Location -> Location -> Maybe Game
+handleTurn :: Move -> ChessBoard Game
+--handleTurn :: Game -> Location -> Location -> Maybe Game
 handleTurn game from to = undefined
                         --if to' == to
                         --    then if (current game) == White
@@ -121,6 +124,8 @@ checkForWin = undefined
 -- updates it
 -- If there is a piece at the target Location then capture it 
 -- TODO - Handle special scenarios like Castling, en passant etc
+-- movePiece :: Move -> ChessBoard Bool
+-- or movePiece :: Move -> Game -> Bool
 movePiece :: Location -> Location -> ChessBoard Location
 movePiece from to | from == to = return to
 movePiece from to | otherwise  =    do
@@ -206,6 +211,7 @@ validMove (P Black Pawn) (Loc x1 y1) (Loc x2 y2) = ((x1 == x2) && ((y2 - y1 == -
 
 -- just gets a Piece from the Location
 -- [QUESTION] Do we need the ChessBoard here? 
+-- getPiece :: Location -> ChessBoard Piece
 getPiece :: Board -> Location -> (Maybe Piece)
 getPiece mp from = do
                     p <- Map.lookup from mp

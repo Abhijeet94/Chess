@@ -1,0 +1,9 @@
+
+
+
+take input move
+game' <- runstate (handleturn move) game
+runstate (handleturn move) game'
+...
+
+playGame --- ask again if that it is the best way... the type
