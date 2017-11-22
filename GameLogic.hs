@@ -64,11 +64,12 @@ otherPlayer Black = White
 -------------------------------------------------------------------------
 
 updateBoard :: Piece -> Move -> ChessBoard Location
-updateBoard p move = do
-                        game <- S.get
-                        S.put $ Game (Map.insert (src move) Nothing (board game)) (current game)
-                        S.put $ Game (Map.insert (dest move) p (board game)) (current game)
-                        return (dest move)
+updateBoard p move = undefined
+                        --do
+                        --game <- S.get
+                        --S.put $ Game (Map.insert (src move) Nothing (board game)) (current game)
+                        --S.put $ Game (Map.insert (dest move) p (board game)) (current game)
+                        --return (dest move)
 
 -------------------------------------------------------------------------
 
@@ -79,8 +80,8 @@ movePiece move = do
                             game <- S.get
                             S.put $ Game (board game) (otherPlayer (current game))
                         else do
-                            nextImmLoc <- getImmNextLocation move
-                            nextLoc <- movePieceOnce $ Move (from move) nextImmLoc
+                            nextImmLoc <- getNextImmLocation move
+                            nextLoc <- movePieceOnce $ Move (src move) nextImmLoc
                             movePiece $ Move nextLoc (dest move)
 
 -------------------------------------------------------------------------
@@ -97,6 +98,11 @@ movePieceOnce move = do
                                                     else updateBoard pSrc move
 
 -------------------------------------------------------------------------
+
+getNextImmLocation :: Move -> ChessBoard Location
+getNextImmLocation move = do 
+                            pSrc <- getPiece (src move)
+                            return $ getImmNextLocation pSrc (src move) (dest move) 
 
 getImmNextLocation :: Piece -> Location -> Location -> Location
 getImmNextLocation (P _ Bishop) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
