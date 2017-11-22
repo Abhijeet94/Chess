@@ -17,7 +17,7 @@ play = playGame initialGame
 playGame :: Game -> IO ()
 playGame game = do
                 printBoard (board game)
-                case (checkForWin (board game)) of 
+                case (checkGameStatus (board game)) of 
                     WhiteWins -> putStrLn "White won."
                     BlackWins -> putStrLn "Black won."
                     Tie       -> putStrLn "Game tied."

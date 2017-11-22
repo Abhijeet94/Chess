@@ -22,7 +22,7 @@ data Piece = P Player PieceType deriving (Eq, Show)
 type Board = Map Location Piece
 data Move = Move {src :: Location, dest :: Location}
 data Game = Game { board :: Board, current :: Player }
-data End = BlackWins | WhiteWins | Checked | Tie | Playing
+data GameStatus = BlackWins | WhiteWins | Checked | Tie | Playing
 type ChessBoard = StateT Game (Either String)
 
 ------------------------------------------------------------------------- 
@@ -175,8 +175,8 @@ getImmNextLocation (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
 -- will be reported as win and the game should end there itself.
 -- so before making a move, check whether its a checkmate
 
---checkForWin :: ChessBoard End
-checkForWin = undefined
+--checkGameStatus :: ChessBoard GameStatus
+checkGameStatus = undefined
                 --do
                 --game <- S.get
                 --return WhiteWins
