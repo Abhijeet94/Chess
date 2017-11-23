@@ -28,7 +28,25 @@ type ChessBoard = StateT Game (Either String)
 ------------------------------------------------------------------------- 
 
 initialGame :: Game
-initialGame = undefined
+initialGame = Game (Map.fromList pos) White
+                where
+                pos :: [(Location, Piece)]
+                pos =  [(Loc 1 1, P White Rook), (Loc 2 1, P White Knight), 
+                        (Loc 3 1, P White Bishop), (Loc 4 1, P White Queen),
+                        (Loc 5 1, P White King), (Loc 6 1, P White Bishop),
+                        (Loc 7 1, P White Knight), (Loc 8 1, P White Rook),
+                        (Loc 1 8, P Black Rook), (Loc 2 8, P Black Knight), 
+                        (Loc 3 8, P Black Bishop), (Loc 4 8, P Black Queen),
+                        (Loc 5 8, P Black King), (Loc 6 8, P Black Bishop),
+                        (Loc 7 8, P Black Knight), (Loc 8 8, P Black Rook),
+                        (Loc 1 2, P White Pawn), (Loc 2 2, P White Pawn), 
+                        (Loc 3 2, P White Pawn), (Loc 4 2, P White Pawn),
+                        (Loc 5 2, P White Pawn), (Loc 6 2, P White Pawn),
+                        (Loc 7 2, P White Pawn), (Loc 8 2, P White Pawn),
+                        (Loc 1 7, P Black Pawn), (Loc 2 7, P Black Pawn), 
+                        (Loc 3 7, P Black Pawn), (Loc 4 7, P Black Pawn),
+                        (Loc 5 7, P Black Pawn), (Loc 6 7, P Black Pawn),
+                        (Loc 7 7, P Black Pawn), (Loc 8 7, P Black Pawn)]
 
 -------------------------------------------------------------------------
 
@@ -164,14 +182,20 @@ getImmNextLocation (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
                                                                                 then y1
                                                                                 else y1 - 1                                                                        
 
+-------------------------------------------------------------------------
 
-
+handleSpecialCases :: Move -> ChessBoard Bool
+handleSpecialCases move = undefined
+                            --do
+                            --p <- getPiece (src move)
+                            --case p of 
+                            --    (P White )
 
 -------------------------------------------------------------------------
 
 -- look for checkmate cases / tie cases
 
--- assuming that the king will never be captured - a checkmate case
+-- assuming that the king will never be removed - a checkmate case
 -- will be reported as win and the game should end there itself.
 -- so before making a move, check whether its a checkmate
 
@@ -241,7 +265,21 @@ kingLocation game = Map.foldrWithKey (kingFunc) (Loc 1 1) (board game)
                     kingFunc _ _ prev = prev
 
 somePieceCanMove :: Game -> Bool
-somePieceCanMove game = undefined                    
+somePieceCanMove game = any (canMove game) sameColorLocations
+
+                        where
+                        canMove :: Game -> Location -> Bool
+                        canMove game loc = case (runStateT (handleTurn (Move loc undefined)) game) of
+                                            Left _ -> False
+                                            otherwise -> True
+
+                        sameColorLocations :: [Location]
+                        sameColorLocations = filter isSameColor (Map.keys (board game))
+
+                        isSameColor :: Location -> Bool
+                        isSameColor loc = case (Map.lookup loc (board game)) of
+                                (Just (P (col) _)) | (col==(current game)) -> True
+                                otherwise -> False
 
 gameLost :: Player -> GameStatus
 gameLost White = BlackWins

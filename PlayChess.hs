@@ -2,6 +2,7 @@
 module PlayChess where
 import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
 import qualified Control.Monad.State as S    
+import Data.Char
 import GameLogic
 
 -------------------------------------------------------------------------
@@ -45,12 +46,23 @@ playGame game = do
                                                             playGame game'
 
 
-
-
 -------------------------------------------------------------------------
 
 getNextMove :: String -> Maybe Move
-getNextMove = undefined
+getNextMove (a:m:x:b:n:xs) = if (wr a') && (wr b') &&
+                                (wr m') && (wr n') &&
+                                (x == ',' || isSpace x)
+                             then (Just (Move (Loc a' m') (Loc b' n')))
+                             else Nothing
+                             where
+                             a' = (digitToInt $ toLower a) - 9
+                             b' = (digitToInt $ toLower b) - 9
+                             m' = digitToInt m
+                             n' = digitToInt n
+
+                             wr :: Int -> Bool
+                             wr i = i > 0 && i < 9
+getNextMove _ = Nothing
 
 
 -------------------------------------------------------------------------
