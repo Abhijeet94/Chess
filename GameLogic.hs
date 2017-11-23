@@ -175,29 +175,82 @@ getImmNextLocation (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
 -- will be reported as win and the game should end there itself.
 -- so before making a move, check whether its a checkmate
 
---checkGameStatus :: ChessBoard GameStatus
-checkGameStatus = undefined
-                --do
-                --game <- S.get
-                --return WhiteWins
+-- it's my turn ....
+-- have i been checked?
+-- have i lost the game?
+-- is there no safe chance left, but my current position?
 
+checkGameStatus :: Game -> GameStatus
+checkGameStatus game = if (isCheck game)
+                        then if (isSafeMoveAvailableForKing game)
+                            then Checked
+                            else gameLost (current game)
+                        else if (isSafeMoveAvailableForKing game) || (somePieceCanMove game)
+                            then Playing
+                            else Tie
 
-kingLocation :: Player -> ChessBoard (Maybe Location)
-kingLocation pl = do
-                game <- S.get
-                return $ Map.foldrWithKey (kingFunc) Nothing (board game)
+isCheck :: Game -> Bool
+isCheck game = any tryAttack oppPieces
+            where 
+
+            tryAttack :: Location -> Bool
+            tryAttack loc = case (runStateT (handleTurn (Move loc (kingLocation game))) game) of
+                            Left _ -> False
+                            otherwise -> True
+
+            oppPieces :: [Location]
+            oppPieces = filter isOppColor (Map.keys (board game))
+
+            isOppColor :: Location -> Bool
+            isOppColor loc = case (Map.lookup loc (board game)) of
+                                (Just (P (col) _)) | (col==(current game)) -> False
+                                otherwise -> True
+
+isSafeMoveAvailableForKing :: Game -> Bool
+isSafeMoveAvailableForKing game = any (isSafeToMoveForKing game) (kingAvailableMoves game)
+
+-- can the king move safely to the given location
+isSafeToMoveForKing :: Game -> Location -> Bool
+isSafeToMoveForKing game loc = not $ isCheck $ Game moveKing (current game)
                 where
-                    kingFunc loc (P pl' King) _ | pl == pl' = Just loc
+                moveKing :: Board
+                moveKing = Map.insert loc (P (current game) King) (Map.delete (kingLocation game) (board game))
+
+-- the set of possible moves a king can take
+kingAvailableMoves :: Game -> [Location]
+kingAvailableMoves game = foldr (appendIfValidInGameContext (kingLocation game)) [] possibleSteps
+                where
+                    possibleSteps :: [(Int, Int)]
+                    possibleSteps = [(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0)]
+
+                    appendIfValidInGameContext :: Location -> (Int, Int) -> [Location] -> [Location]
+                    appendIfValidInGameContext (Loc x y) (a, b) lst = if ((x+a)>0 && (x+a)<9) &&
+                                                                         ((y+b)>0 && (y+b)<9) &&
+                                                                         sameColorPieceNotPresent (Loc (x+a) (y+b))
+                                                                      then (Loc (x+a) (y+b)) : lst
+                                                                      else lst
+                    sameColorPieceNotPresent :: Location -> Bool
+                    sameColorPieceNotPresent loc = case (Map.lookup loc (board game)) of
+                                                    (Just (P cl _)) | (cl == (current game)) -> False
+                                                    otherwise -> True                                                                      
+
+kingLocation :: Game -> Location
+kingLocation game = Map.foldrWithKey (kingFunc) (Loc 1 1) (board game)
+                where
+                    kingFunc loc (P pl King) _ | pl == (current game) = loc
                     kingFunc _ _ prev = prev
 
---isChecked :: Player -> ChessBoard Bool
---isChecked pl = 
---                where
---                    myKing :: Location
+somePieceCanMove :: Game -> Bool
+somePieceCanMove game = undefined                    
 
+gameLost :: Player -> GameStatus
+gameLost White = BlackWins
+gameLost Black = WhiteWins
 
 -------------------------------------------------------------------------
 
 
 -- handle special cases like castling, pawn conversion, en-passant etc
+-- also handle scenario when king moves itself to a position where it can
+-- be directly killed
 
