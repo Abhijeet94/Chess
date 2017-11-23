@@ -3,6 +3,8 @@ module PlayChess where
 import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
 import qualified Control.Monad.State as S    
 import Data.Char
+import Data.Map (Map)
+import qualified Data.Map as Map
 import GameLogic
 
 -------------------------------------------------------------------------
@@ -31,8 +33,9 @@ playGame game = do
 
                 continuePlay :: Game -> IO ()
                 continuePlay game = do
-                    putStr $ "Player " ++ (show (current game)) ++ "'s turn: "
+                    putStr $ (show (current game)) ++ "'s turn: "
                     input <- getLine
+                    if input == "exit" then return () else do
                     case (getNextMove input) of
                         Nothing -> do
                                     putStrLn "Invalid input"
@@ -41,13 +44,12 @@ playGame game = do
                                         Left s -> do
                                                     putStrLn $ "Uh-oh: " ++ s
                                                     playGame game
-                                        Right (_, game') -> do
-                                                            printBoard (board game')
-                                                            playGame game'
+                                        Right (_, game') -> playGame game'
 
 
 -------------------------------------------------------------------------
 
+-- this throws exceptions if not a digit - handle that
 getNextMove :: String -> Maybe Move
 getNextMove (a:m:x:b:n:xs) = if (wr a') && (wr b') &&
                                 (wr m') && (wr n') &&
@@ -69,6 +71,6 @@ getNextMove _ = Nothing
 
 -- PrettyPrint our board
 printBoard :: Board -> IO ()
-printBoard = undefined  
+printBoard board = putStrLn $ show board  --undefined
 
 -------------------------------------------------------------------------

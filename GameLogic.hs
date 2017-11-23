@@ -60,7 +60,7 @@ getPiece :: Location -> ChessBoard Piece
 getPiece loc = do
                 game <- S.get
                 case (Map.lookup loc (board game)) of
-                    Nothing -> throwError $ "No piece found at location" ++ show loc
+                    Nothing -> throwError $ "No piece found at location " ++ show loc
                     (Just x) -> return x
 
 -------------------------------------------------------------------------
@@ -119,6 +119,8 @@ movePiece move = do
                             game <- S.get
                             S.put $ Game (board game) (otherPlayer (current game))
                         else do
+                            specialMove <- handleSpecialCases move
+                            if specialMove then return () else do
                             nextImmLoc <- getNextImmLocation move
                             movePieceOnce $ Move (src move) nextImmLoc
                             movePiece $ Move nextImmLoc (dest move)
@@ -185,11 +187,27 @@ getImmNextLocation (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
 -------------------------------------------------------------------------
 
 handleSpecialCases :: Move -> ChessBoard Bool
-handleSpecialCases move = undefined
-                            --do
-                            --p <- getPiece (src move)
-                            --case p of 
-                            --    (P White )
+handleSpecialCases move = do
+                            p <- getPiece (src move)
+                            game <- S.get
+                            case (p, (src move, dest move)) of 
+                                (P cl King, (s, d)) -> if not $ isCastling s d
+                                                        then if (isSafeToMoveForKing game d)
+                                                            then do
+                                                                    movePieceOnce move
+                                                                    return True
+                                                            else throwError $ "Not safe for king!"
+                                                        else doCastlingIfAllowed s d
+                                -- undefined - handle other special cases
+                                otherwise -> return False
+
+                            where
+                            -- does king move two steps? - allow this in validMove as well (undefined)
+                            isCastling :: Location -> Location -> Bool
+                            isCastling (Loc x1 y1) (Loc x2 y2) = (y1==y2) && (abs (x1-x2)==2)
+
+                            doCastlingIfAllowed :: Location -> Location -> ChessBoard Bool
+                            doCastlingIfAllowed s d = undefined
 
 -------------------------------------------------------------------------
 
@@ -206,7 +224,7 @@ handleSpecialCases move = undefined
 
 checkGameStatus :: Game -> GameStatus
 checkGameStatus game = if (isCheck game)
-                        then if (isSafeMoveAvailableForKing game)
+                        then if (isSafeMoveAvailableForKing game) || (canSomePieceDefendKing game)
                             then Checked
                             else gameLost (current game)
                         else if (isSafeMoveAvailableForKing game) || (somePieceCanMove game)
@@ -265,21 +283,51 @@ kingLocation game = Map.foldrWithKey (kingFunc) (Loc 1 1) (board game)
                     kingFunc _ _ prev = prev
 
 somePieceCanMove :: Game -> Bool
-somePieceCanMove game = any (canMove game) sameColorLocations
+somePieceCanMove game = any (tryMove game) sameColorLocations
+                where
+                tryMove :: Game -> Location -> Bool
+                tryMove game loc = any (canMove game loc) (nextMoveSet game loc)
 
-                        where
-                        canMove :: Game -> Location -> Bool
-                        canMove game loc = case (runStateT (handleTurn (Move loc undefined)) game) of
-                                            Left _ -> False
-                                            otherwise -> True
+                canMove :: Game -> Location -> Location -> Bool
+                canMove game loc loc' = case (runStateT (handleTurn (Move loc loc')) game) of
+                                    Left _ -> False
+                                    otherwise -> True
 
-                        sameColorLocations :: [Location]
-                        sameColorLocations = filter isSameColor (Map.keys (board game))
+                nextMoveSet :: Game -> Location -> [Location]
+                nextMoveSet game loc = filter (\(Loc x y) -> x>0 && x<9 && y<9 && y>0)
+                                        $ possibleNextMoves game loc
 
-                        isSameColor :: Location -> Bool
-                        isSameColor loc = case (Map.lookup loc (board game)) of
-                                (Just (P (col) _)) | (col==(current game)) -> True
-                                otherwise -> False
+                possibleNextMoves :: Game -> Location -> [Location]
+                possibleNextMoves game loc = case ((Map.lookup loc (board game)), loc) of
+                                    (Nothing, _) -> []
+                                    (Just (P _ King), Loc x y) -> [] -- already taken care of
+                                    (Just (P _ Bishop), Loc x y) -> [Loc (x+1) (y+1), Loc (x-1) (y+1),
+                                                                     Loc (x+1) (y-1), Loc (x-1) (y-1)]                                
+                                    (Just (P _ Rook), Loc x y) ->   [Loc (x) (y+1), Loc (x-1) (y),
+                                                                     Loc (x+1) (y), Loc (x) (y-1)]
+                                    (Just (P _ Queen), Loc x y) ->   [Loc (x) (y+1), Loc (x-1) (y),
+                                                                     Loc (x+1) (y), Loc (x) (y-1),
+                                                                     Loc (x+1) (y+1), Loc (x-1) (y+1),
+                                                                     Loc (x+1) (y-1), Loc (x-1) (y-1)]
+                                    (Just (P _ Knight), Loc x y) -> [Loc (x-2) (y+1), Loc (x-1) (y+2),
+                                                                     Loc (x+1) (y+2), Loc (x+2) (y+1),
+                                                                     Loc (x-2) (y-1), Loc (x-1) (y-2),
+                                                                     Loc (x+1) (y-2), Loc (x+2) (y-1)]
+                                    (Just (P White Pawn), Loc x y) -> [Loc (x-1) (y+1), Loc (x) (y+1),
+                                                                        Loc (x+1) (y+1)]
+                                    (Just (P Black Pawn), Loc x y) -> [Loc (x-1) (y-1), Loc (x) (y-1),
+                                                                        Loc (x+1) (y-1)]                                                                   
+
+                sameColorLocations :: [Location]
+                sameColorLocations = filter isSameColor (Map.keys (board game))
+
+                isSameColor :: Location -> Bool
+                isSameColor loc = case (Map.lookup loc (board game)) of
+                        (Just (P (col) _)) | (col==(current game)) -> True
+                        otherwise -> False
+
+canSomePieceDefendKing :: Game -> Bool
+canSomePieceDefendKing game = undefined
 
 gameLost :: Player -> GameStatus
 gameLost White = BlackWins
@@ -290,5 +338,5 @@ gameLost Black = WhiteWins
 
 -- handle special cases like castling, pawn conversion, en-passant etc
 -- also handle scenario when king moves itself to a position where it can
--- be directly killed
+-- be directly killed (use isSafeToMoveForKing)
 
