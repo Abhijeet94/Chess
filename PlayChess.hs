@@ -69,8 +69,42 @@ getNextMove _ = Nothing
 
 -------------------------------------------------------------------------
 
+pBoardX :: Board -> Int -> IO ()
+pBoardX b 1 = do
+               putStr "1 "
+               pBoardXY b 1 1
+pBoardX b x = do
+               putStr ((show x)++" ")
+               pBoardXY b x 1
+               pBoardX b (x-1)
+
+pBoardXY :: Board -> Int -> Int -> IO ()
+pBoardXY b y 8 = do
+                   printPiece b 8 y
+                   putStrLn ""
+pBoardXY b y x = do 
+                   printPiece b x y
+                   putStr " "
+                   pBoardXY b y (x+1)
+
+printPiece :: Board -> Int -> Int -> IO ()
+printPiece b x y = case (Map.lookup (Loc x y) b) of 
+                     Nothing -> putStr "x "
+                     (Just p) -> putStr (pieceToStr p)
+
+pieceToStr :: Piece -> String
+pieceToStr (P _ King) = "K "
+pieceToStr (P _ Queen) = "Q "
+pieceToStr (P _ Bishop) = "B "
+pieceToStr (P _ Knight) = "k "
+pieceToStr (P _ Rook) = "R "
+pieceToStr (P _ Pawn) = "P "
+
 -- PrettyPrint our board
 printBoard :: Board -> IO ()
-printBoard board = putStrLn $ show board  --undefined
+printBoard board = do 
+                     pBoardX board 8
+                     putStrLn "  A  B  C  D  E  F  G  H "
+ 
 
 -------------------------------------------------------------------------
