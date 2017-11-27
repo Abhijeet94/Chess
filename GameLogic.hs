@@ -108,6 +108,7 @@ updateBoard :: Piece -> Move -> ChessBoard ()
 updateBoard p move = do
                         game <- S.get
                         S.put $ Game (Map.delete (src move) (board game)) (current game)
+                        game <- S.get
                         S.put $ Game (Map.insert (dest move) p (board game)) (current game)
 
 -------------------------------------------------------------------------
@@ -127,16 +128,25 @@ movePiece move = do
 
 -------------------------------------------------------------------------
 
-
 movePieceOnce :: Move -> ChessBoard ()
 movePieceOnce move = do
                         pSrc <- getPiece (src move)
                         game <- S.get
                         case (Map.lookup (dest move) (board game)) of
-                            Nothing -> updateBoard pSrc move
+                            Nothing -> case pSrc of
+                                           (P _ Pawn) -> case (src move, dest move) of
+                                                        (Loc x1 y1,Loc x2 y2) -> if not (x1 == x2)
+                                                                                   then throwError $ "Invalid move"
+                                                                                   else updateBoard pSrc move
+                                           (P _ _)    -> updateBoard pSrc move
                             (Just (P clDest _)) -> if clDest == (current game)
                                                     then throwError $ "Invalid move"
-                                                    else updateBoard pSrc move
+                                                    else case pSrc of
+                                                           (P _ Pawn) -> case (src move, dest move) of
+                                                                        (Loc x1 y1,Loc x2 y2) -> if (x1 == x2)
+                                                                                                   then throwError $ "Invalid move"
+                                                                                                   else updateBoard pSrc move
+                                                           (P _ _)    -> updateBoard pSrc move
 
 -------------------------------------------------------------------------
 
@@ -340,3 +350,4 @@ gameLost Black = WhiteWins
 -- also handle scenario when king moves itself to a position where it can
 -- be directly killed (use isSafeToMoveForKing)
 
+--current bugs: pawns can capture non-diagonally

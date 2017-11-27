@@ -57,8 +57,8 @@ getNextMove (a:m:x:b:n:xs) = if (wr a') && (wr b') &&
                              then (Just (Move (Loc a' m') (Loc b' n')))
                              else Nothing
                              where
-                             a' = (digitToInt $ toLower a) - 9
-                             b' = (digitToInt $ toLower b) - 9
+                             a' = (ord $ toLower a) - 96
+                             b' = (ord $ toLower b) - 96
                              m' = digitToInt m
                              n' = digitToInt n
 
@@ -89,22 +89,28 @@ pBoardXY b y x = do
 
 printPiece :: Board -> Int -> Int -> IO ()
 printPiece b x y = case (Map.lookup (Loc x y) b) of 
-                     Nothing -> putStr "x "
+                     Nothing -> putStr " x  "
                      (Just p) -> putStr (pieceToStr p)
 
 pieceToStr :: Piece -> String
-pieceToStr (P _ King) = "K "
-pieceToStr (P _ Queen) = "Q "
-pieceToStr (P _ Bishop) = "B "
-pieceToStr (P _ Knight) = "k "
-pieceToStr (P _ Rook) = "R "
-pieceToStr (P _ Pawn) = "P "
+pieceToStr (P Black King) = "BK  "
+pieceToStr (P Black Queen) = "BQ  "
+pieceToStr (P Black Bishop) = "BB  "
+pieceToStr (P Black Knight) = "BKn "
+pieceToStr (P Black Rook) = "BR  "
+pieceToStr (P Black Pawn) = "BP  "
+pieceToStr (P White King) = "WK  "
+pieceToStr (P White Queen) = "WQ  "
+pieceToStr (P White Bishop) = "WB  "
+pieceToStr (P White Knight) = "WKn "
+pieceToStr (P White Rook) = "WR  "
+pieceToStr (P White Pawn) = "WP  "
 
 -- PrettyPrint our board
 printBoard :: Board -> IO ()
 printBoard board = do 
                      pBoardX board 8
-                     putStrLn "  A  B  C  D  E  F  G  H "
+                     putStrLn "   A    B    C    D    E    F    G    H  "
  
 
 -------------------------------------------------------------------------
