@@ -113,10 +113,20 @@ updateBoard p move = do
 
 -------------------------------------------------------------------------
 
+isKingSafeAfterMove :: ChessBoard ()
+isKingSafeAfterMove = do
+                        game <- S.get
+                        if isCheck game
+                        then throwError $ "King is not safe"
+                        else return ()
+
+-------------------------------------------------------------------------
+
 movePiece :: Move -> ChessBoard ()
 movePiece move = do
                     if (src move) == (dest move)
                         then do
+                            isKingSafeAfterMove
                             game <- S.get
                             S.put $ Game (board game) (otherPlayer (current game))
                         else do
@@ -191,13 +201,9 @@ handleSpecialCases move = do
                             p <- getPiece (src move)
                             game <- S.get
                             case (p, (src move, dest move)) of 
-                                (P cl King, (s, d)) -> if not $ isCastling s d
-                                                        then if (isSafeToMoveForKing game d)
-                                                            then do
-                                                                    movePieceOnce move
-                                                                    return True
-                                                            else throwError $ "Not safe for king!"
-                                                        else doCastlingIfAllowed s d
+                                (P cl King, (s, d)) -> if isCastling s d
+                                                        then doCastlingIfAllowed s d
+                                                        else return False
                                 (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> case (Map.lookup (dest move) (board game)) of
                                                                             Nothing -> if not (x1 == x2)
                                                                                            then throwError $ "Invalid move for Pawn"
@@ -247,7 +253,7 @@ checkGameStatus game = if (isCheck game)
                             else Tie
 
 isCheck :: Game -> Bool
-isCheck game = any tryAttack oppPieces
+isCheck game = (doesOppPlayerHaveAKingToContinueGame game) && any tryAttack oppPieces
             where 
 
             tryAttack :: Location -> Bool
@@ -366,6 +372,20 @@ canSomePieceDefendKing game = any (tryMove game) sameColorLocations
 -- Change player in game to try configurations for check etc
 cp :: Game -> Game
 cp game = Game (board game) (otherPlayer $ current game)
+
+-- used before isCheck. One needs to worried about being
+-- in check only if the other player has already not lost.
+-- This becomes important to check so as to avoid infinite
+-- loop when we check for isCheck after every normal move
+-- (handleTurn, movePiece etc) as isCheck also uses 
+-- handleTurn inside.
+doesOppPlayerHaveAKingToContinueGame :: Game -> Bool
+doesOppPlayerHaveAKingToContinueGame game = case (Map.foldrWithKey (kingFunc) (Loc (-1) (-1)) (board game)) of
+                                                    (Loc x y) | x == -1 && y == -1 -> False
+                                                    otherwise -> True
+                                            where
+                                                kingFunc loc (P pl King) _ | pl == (otherPlayer $ current game) = loc
+                                                kingFunc _ _ prev = prev
 
 gameLost :: Player -> GameStatus
 gameLost White = BlackWins
