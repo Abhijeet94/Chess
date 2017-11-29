@@ -378,7 +378,8 @@ cp game = Game (board game) (otherPlayer $ current game)
 -- This becomes important to check so as to avoid infinite
 -- loop when we check for isCheck after every normal move
 -- (handleTurn, movePiece etc) as isCheck also uses 
--- handleTurn inside.
+-- handleTurn inside. But this handle turn would have removed
+-- the king, because of which the function below will not pass.
 doesOppPlayerHaveAKingToContinueGame :: Game -> Bool
 doesOppPlayerHaveAKingToContinueGame game = case (Map.foldrWithKey (kingFunc) (Loc (-1) (-1)) (board game)) of
                                                     (Loc x y) | x == -1 && y == -1 -> False
