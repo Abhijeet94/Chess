@@ -121,7 +121,7 @@ movePiece move = do
                             S.put $ Game (board game) (otherPlayer (current game))
                         else do
                             specialMove <- handleSpecialCases move
-                            if specialMove then return () else do
+                            if specialMove then movePiece (Move (dest move) (dest move)) else do
                             nextImmLoc <- getNextImmLocation move
                             movePieceOnce $ Move (src move) nextImmLoc
                             movePiece $ Move nextImmLoc (dest move)
@@ -132,21 +132,7 @@ movePieceOnce :: Move -> ChessBoard ()
 movePieceOnce move = do
                         pSrc <- getPiece (src move)
                         game <- S.get
-                        case (Map.lookup (dest move) (board game)) of
-                            Nothing -> case pSrc of
-                                           (P _ Pawn) -> case (src move, dest move) of
-                                                        (Loc x1 y1,Loc x2 y2) -> if not (x1 == x2)
-                                                                                   then throwError $ "Invalid move"
-                                                                                   else updateBoard pSrc move
-                                           (P _ _)    -> updateBoard pSrc move
-                            (Just (P clDest _)) -> if clDest == (current game)
-                                                    then throwError $ "Invalid move"
-                                                    else case pSrc of
-                                                           (P _ Pawn) -> case (src move, dest move) of
-                                                                        (Loc x1 y1,Loc x2 y2) -> if (x1 == x2)
-                                                                                                   then throwError $ "Invalid move"
-                                                                                                   else updateBoard pSrc move
-                                                           (P _ _)    -> updateBoard pSrc move
+                        updateBoard pSrc move
 
 -------------------------------------------------------------------------
 
@@ -208,6 +194,20 @@ handleSpecialCases move = do
                                                                     return True
                                                             else throwError $ "Not safe for king!"
                                                         else doCastlingIfAllowed s d
+                                (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> case (Map.lookup (dest move) (board game)) of
+                                                                            Nothing -> if not (x1 == x2)
+                                                                                           then throwError $ "Invalid move for Pawn"
+                                                                                           else do 
+                                                                                                movePieceOnce move
+                                                                                                return True
+                                                                            (Just (P clDest _)) -> if clDest == cl
+                                                                                                        then throwError $ "Invalid move for Pawn"
+                                                                                                        else if (x1 == x2)
+                                                                                                               then throwError $ "Invalid move for Pawn"
+                                                                                                               else do 
+                                                                                                                    movePieceOnce move
+                                                                                                                    return True
+
                                 -- undefined - handle other special cases
                                 otherwise -> return False
 
@@ -219,6 +219,7 @@ handleSpecialCases move = do
                             doCastlingIfAllowed :: Location -> Location -> ChessBoard Bool
                             doCastlingIfAllowed s d = undefined
 
+                        
 -------------------------------------------------------------------------
 
 -- look for checkmate cases / tie cases
