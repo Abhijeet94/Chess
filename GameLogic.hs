@@ -132,7 +132,11 @@ movePieceOnce :: Move -> ChessBoard ()
 movePieceOnce move = do
                         pSrc <- getPiece (src move)
                         game <- S.get
-                        updateBoard pSrc move
+                        case (Map.lookup (dest move) (board game)) of
+                            Nothing -> updateBoard pSrc move
+                            (Just (P clDest _)) -> if clDest == (current game)
+                                                     then throwError $ "Invalid move"
+                                                     else updateBoard pSrc move
 
 -------------------------------------------------------------------------
 
