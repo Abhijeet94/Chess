@@ -35,19 +35,23 @@ playGame game = do
                 continuePlay game = do
                     putStr $ (show (current game)) ++ "'s turn: "
                     input <- getLine
-                    if input == "exit" then return () else do
-                    case (getNextMove input) of
-                        Nothing -> do
-                                    putStrLn "Invalid input"
-                                    playGame game
-                        (Just move) -> case (runStateT (handleTurn move) game) of
-                                        Left s -> do
-                                                    putStrLn $ "Uh-oh: " ++ s
-                                                    playGame game
-                                        Right (_, game') -> playGame game'
+                    if input == "exit" then return () else 
+                        if input == "printlog" then (printLog game) else do
+                            case (getNextMove input) of
+                                Nothing -> do
+                                            putStrLn "Invalid input"
+                                            playGame game
+                                (Just move) -> case (runStateT (handleTurn move) game) of
+                                                Left s -> do
+                                                            putStrLn $ "Uh-oh: " ++ s
+                                                            playGame game
+                                                Right (_, game') -> playGame game'
 
 
 -------------------------------------------------------------------------
+
+printLog :: Game -> IO ()
+printLog game = mapM_ putStrLn (map show (moveLog game))
 
 -- this throws exceptions if not a digit - handle that
 getNextMove :: String -> Maybe Move
