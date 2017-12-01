@@ -206,7 +206,24 @@ handleSpecialCases move = do
                                                         else return False
                                 (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> case (Map.lookup (dest move) (board game)) of
                                                                             Nothing -> if not (x1 == x2)
-                                                                                           then throwError $ "Invalid move for Pawn"
+                                                                                           then 
+                                                                                            case cl of --en passant
+                                                                                                Black -> if (y2 == 3) then
+                                                                                                            case (Map.lookup (Loc x2 y1) (board game)) of
+                                                                                                                Just (P White Pawn) -> do
+                                                                                                                                    movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                                                                                                    movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                                                                                                    return True
+                                                                                                                _              -> throwError $ "Invalid move for Pawn"
+                                                                                                         else throwError $ "Invalid move for Pawn"
+                                                                                                White -> if (y2 == 6) then
+                                                                                                            case (Map.lookup (Loc x2 y1) (board game)) of
+                                                                                                                Just (P Black Pawn) -> do
+                                                                                                                                    movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                                                                                                    movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                                                                                                    return True
+                                                                                                                _              -> throwError $ "Invalid move for Pawn"
+                                                                                                         else throwError $ "Invalid move for Pawn"
                                                                                            else do 
                                                                                                 movePieceOnce move
                                                                                                 return True
