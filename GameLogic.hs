@@ -47,6 +47,18 @@ initialGame = Game (Map.fromList pos) White []
                         (Loc 3 7, P Black Pawn), (Loc 4 7, P Black Pawn),
                         (Loc 5 7, P Black Pawn), (Loc 6 7, P Black Pawn),
                         (Loc 7 7, P Black Pawn), (Loc 8 7, P Black Pawn)]
+                        
+castleGame :: Game
+castleGame = Game (Map.fromList pos) White []
+                where
+                pos :: [(Location, Piece)]
+                pos =  [(Loc 1 1, P White Rook),
+                        (Loc 5 1, P White King),  
+                        (Loc 8 1, P White Rook),
+                        (Loc 1 8, P Black Rook), 
+                        (Loc 5 8, P Black King), 
+                        (Loc 8 8, P Black Rook)
+                        ]
 
 -------------------------------------------------------------------------
 
@@ -94,7 +106,9 @@ handleTurn move = do
 -- whether or not the Piece can move to that Location 
 -- according to the rules for each piece
 validMove :: Piece -> Location -> Location -> Bool
-validMove (P _ King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) 
+validMove (P Black King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 8)
+                                    where dist = (x1 - x2)^2 + (y1 - y2)^2
+validMove (P White King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 1)
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
 validMove (P _ Queen) (Loc x1 y1) (Loc x2 y2) = validMove (P White Bishop) (Loc x1 y1) (Loc x2 y2) ||
                                                 validMove (P White Rook) (Loc x1 y1) (Loc x2 y2)
@@ -265,7 +279,33 @@ handleSpecialCases move = do
                             isCastling (Loc x1 y1) (Loc x2 y2) = (y1==y2) && (abs (x1-x2)==2)
 
                             doCastlingIfAllowed :: Location -> Location -> ChessBoard Bool
-                            doCastlingIfAllowed s d = undefined
+                            doCastlingIfAllowed (Loc x1 y1) (Loc x2 y2) = do
+                                                                            game <- S.get
+                                                                            if (x1 < x2) then -- king-side castling
+                                                                                case ((Map.lookup (Loc (x1 + 1) y1) (board game)),
+                                                                                      (Map.lookup (Loc (x1 + 2) y1) (board game)),
+                                                                                      (Map.lookup (Loc (x1 + 3) y1) (board game))) of
+                                                                                        (Nothing, Nothing, Just (P _ Rook)) -> if ((getMoveCount (Loc (x1 + 3) y1) (moveLog game) == 0) && 
+                                                                                                                                  (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
+                                                                                                                                    do
+                                                                                                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
+                                                                                                                                        movePieceOnce $ Move (Loc (x1+3) y1) (Loc (x2-1) y2)
+                                                                                                                                        return True
+                                                                                                                        else throwError $ "Invalid move for King"
+                                                                                        _                            -> throwError $ "Can't castle when there are pieces in the way!"
+                                                                            else case ((Map.lookup (Loc (x1 - 1) y1) (board game)),
+                                                                                      (Map.lookup (Loc (x1 - 2) y1) (board game)),
+                                                                                      (Map.lookup (Loc (x1 - 3) y1) (board game)),
+                                                                                      (Map.lookup (Loc (x1 - 4) y1) (board game))) of
+                                                                                        (Nothing, Nothing, Nothing, Just (P _ Rook)) -> if ((getMoveCount (Loc (x1 - 4) y1) (moveLog game) == 0) && 
+                                                                                                                                           (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
+                                                                                                                                            do
+                                                                                                                                                movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
+                                                                                                                                                movePieceOnce $ Move (Loc (x1-4) y1) (Loc (x2+1) y2)
+                                                                                                                                                return True
+                                                                                                                                        else throwError $ "Invalid move for King"
+                                                                                        _                            -> throwError $ "Can't castle when there are pieces in the way!"
+                                                                                  
 
                         
 -------------------------------------------------------------------------
