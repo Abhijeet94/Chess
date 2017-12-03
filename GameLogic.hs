@@ -63,6 +63,19 @@ getPiece loc = do
                     Nothing -> throwError $ "No piece found at location " ++ show loc
                     (Just x) -> return x
 
+-------------------------------------------------------------------------                  
+                    
+getMoveCount :: Location -> [Move] -> Int
+getMoveCount loc [] = 0
+getMoveCount loc (x:xs) = if (dest x == loc) then 1 + getMoveCount (src x) xs
+                                else getMoveCount loc xs
+
+-------------------------------------------------------------------------       
+
+movedLastTurn :: Location -> [Move] -> Bool   
+movedLastTurn loc [] = False
+movedLastTurn loc (x:xs) = if (dest x == loc) then True else False
+        
 -------------------------------------------------------------------------
 
 handleTurn :: Move -> ChessBoard ()
@@ -204,40 +217,48 @@ handleSpecialCases move = do
                                 (P cl King, (s, d)) -> if isCastling s d
                                                         then doCastlingIfAllowed s d
                                                         else return False
-                                (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> case (Map.lookup (dest move) (board game)) of
-                                                                            Nothing -> if not (x1 == x2)
-                                                                                           then 
-                                                                                            case cl of --en passant
-                                                                                                Black -> if (y2 == 3) then
-                                                                                                            case (Map.lookup (Loc x2 y1) (board game)) of
-                                                                                                                Just (P White Pawn) -> do
-                                                                                                                                    movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
-                                                                                                                                    movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
-                                                                                                                                    return True
-                                                                                                                _              -> throwError $ "Invalid move for Pawn"
-                                                                                                         else throwError $ "Invalid move for Pawn"
-                                                                                                White -> if (y2 == 6) then
-                                                                                                            case (Map.lookup (Loc x2 y1) (board game)) of
-                                                                                                                Just (P Black Pawn) -> do
-                                                                                                                                    movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
-                                                                                                                                    movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
-                                                                                                                                    return True
-                                                                                                                _              -> throwError $ "Invalid move for Pawn"
-                                                                                                         else throwError $ "Invalid move for Pawn"
-                                                                                           else do 
-                                                                                                movePieceOnce move
-                                                                                                return True
-                                                                            (Just (P clDest _)) -> if clDest == cl
-                                                                                                        then throwError $ "Invalid move for Pawn"
-                                                                                                        else if (x1 == x2)
-                                                                                                               then throwError $ "Invalid move for Pawn"
-                                                                                                               else do 
-                                                                                                                    movePieceOnce move
-                                                                                                                    return True
+                                (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> 
+                                    case (Map.lookup (dest move) (board game)) of
+                                        Nothing -> if not (x1 == x2)
+                                                       then 
+                                                        case cl of --en passant
+                                                            Black -> 
+                                                                if (y2 == 3) then
+                                                                    case (Map.lookup (Loc x2 y1) (board game)) of
+                                                                        Just (P White Pawn) -> if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
+                                                                                                   movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
+                                                                                                    do
+                                                                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                                                                        return True
+                                                                                                    else throwError $ "Invalid move for Pawn"
+                                                                        _              -> throwError $ "Invalid move for Pawn"
+                                                                else throwError $ "Invalid move for Pawn"
+                                                            White -> 
+                                                                if (y2 == 6) then
+                                                                    case (Map.lookup (Loc x2 y1) (board game)) of
+                                                                        Just (P Black Pawn) -> if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
+                                                                                                   movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
+                                                                                                    do
+                                                                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                                                                        return True
+                                                                                                    else throwError $ "Invalid move for Pawn"
+                                                                        _              -> throwError $ "Invalid move for Pawn"
+                                                                 else throwError $ "Invalid move for Pawn"
+                                                       else do 
+                                                            movePieceOnce move
+                                                            return True
+                                        (Just (P clDest _)) -> if clDest == cl
+                                                                then throwError $ "Invalid move for Pawn"
+                                                                else if (x1 == x2)
+                                                                       then throwError $ "Invalid move for Pawn"
+                                                                       else do 
+                                                                            movePieceOnce move
+                                                                            return True
 
                                 -- undefined - handle other special cases
                                 otherwise -> return False
-
                             where
                             -- does king move two steps? - allow this in validMove as well (undefined)
                             isCastling :: Location -> Location -> Bool
