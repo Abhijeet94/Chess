@@ -13,7 +13,7 @@ main :: IO ()
 main = play
 
 play :: IO ()
-play = playGame initialGame
+play = playGame promoteGame
 
 -------------------------------------------------------------------------
 

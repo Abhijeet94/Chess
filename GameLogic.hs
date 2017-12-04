@@ -59,6 +59,16 @@ castleGame = Game (Map.fromList pos) White []
                         (Loc 5 8, P Black King), 
                         (Loc 8 8, P Black Rook)
                         ]
+                        
+promoteGame :: Game
+promoteGame = Game (Map.fromList pos) White []
+                where
+                pos :: [(Location, Piece)]
+                pos =  [(Loc 1 7, P White Pawn),
+                        (Loc 5 1, P White King),  
+                        (Loc 5 8, P Black King), 
+                        (Loc 8 2, P Black Pawn)
+                        ]
 
 -------------------------------------------------------------------------
 
@@ -260,9 +270,14 @@ handleSpecialCases move = do
                                                                                                     else throwError $ "Invalid move for Pawn"
                                                                         _              -> throwError $ "Invalid move for Pawn"
                                                                  else throwError $ "Invalid move for Pawn"
-                                                       else do 
-                                                            movePieceOnce move
-                                                            return True
+                                                       else 
+                                                            do 
+                                                                movePieceOnce move
+                                                                if (cl == Black) then S.put $ Game (Map.insert (Loc x2 y2) (P Black Queen) (board game)) (current game) (moveLog game)
+                                                                else S.put $ Game (Map.insert (Loc x2 y2) (P White Queen) (board game)) (current game) (moveLog game)
+                                                                game <- S.get
+                                                                S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
+                                                                return True
                                         (Just (P clDest _)) -> if clDest == cl
                                                                 then throwError $ "Invalid move for Pawn"
                                                                 else if (x1 == x2)
