@@ -118,5 +118,8 @@ tInvalidMove = "invalidMove tests" ~: TestList [
       ]
 
 
+-- TODO: test that check can't occur through other pieces
 
+
+-- TODO: test 3 complex regular game states
 

@@ -167,10 +167,18 @@ movePiece move = do
                             game <- S.get
                             S.put $ Game (board game) (otherPlayer (current game)) (moveLog game)
                         else do
+                            game <- S.get
                             specialMove <- handleSpecialCases move
                             if specialMove then movePiece (Move (dest move) (dest move)) else do
                             nextImmLoc <- getNextImmLocation move
-                            movePieceOnce $ Move (src move) nextImmLoc
+                            case (Map.lookup nextImmLoc (board game)) of 
+                                Nothing -> movePieceOnce $ Move (src move) nextImmLoc
+                                (Just (P clDest _)) -> if (clDest == (current game))
+                                                            then throwError $ "Invalid move"
+                                                       else if (not (nextImmLoc == dest move))
+                                                                then throwError $ "Invalid move"
+                                                            else 
+                                                                movePieceOnce $ Move (src move) nextImmLoc
                             movePiece $ Move nextImmLoc (dest move)
 
 -------------------------------------------------------------------------
@@ -181,7 +189,7 @@ movePieceOnce move = do
                         game <- S.get
                         case (Map.lookup (dest move) (board game)) of
                             Nothing -> updateBoard pSrc move
-                            (Just (P clDest _)) -> if clDest == (current game)
+                            (Just (P clDest _)) -> if clDest == (current game) 
                                                      then throwError $ "Invalid move"
                                                      else updateBoard pSrc move
 
@@ -273,11 +281,23 @@ handleSpecialCases move = do
                                                        else 
                                                             do 
                                                                 movePieceOnce move
-                                                                if (cl == Black) then S.put $ Game (Map.insert (Loc x2 y2) (P Black Queen) (board game)) (current game) (moveLog game)
-                                                                else S.put $ Game (Map.insert (Loc x2 y2) (P White Queen) (board game)) (current game) (moveLog game)
-                                                                game <- S.get
-                                                                S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
-                                                                return True
+                                                                --REFACTOR THIS 
+                                                                if (cl == Black && y2 == 1) then 
+                                                                    do 
+                                                                        S.put $ Game (Map.insert (Loc x2 y2) (P Black Queen) (board game)) (current game) (moveLog game)
+                                                                        game <- S.get
+                                                                        S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
+                                                                        return True
+                                                                else if (cl == White && y2 == 8) then 
+                                                                    do 
+                                                                        S.put $ Game (Map.insert (Loc x2 y2) (P White Queen) (board game)) (current game) (moveLog game)
+                                                                        game <- S.get
+                                                                        S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
+                                                                        return True
+                                                                else do 
+                                                                        return True
+                                                                --END REFACTOR
+                                                                --return True
                                         (Just (P clDest _)) -> if clDest == cl
                                                                 then throwError $ "Invalid move for Pawn"
                                                                 else if (x1 == x2)

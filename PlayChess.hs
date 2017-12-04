@@ -93,28 +93,28 @@ pBoardXY b y x = do
 
 printPiece :: Board -> Int -> Int -> IO ()
 printPiece b x y = case (Map.lookup (Loc x y) b) of 
-                     Nothing -> putStr " x  "
+                     Nothing -> putStr " x "
                      (Just p) -> putStr (pieceToStr p)
 
 pieceToStr :: Piece -> String
-pieceToStr (P Black King) = "BK  "
-pieceToStr (P Black Queen) = "BQ  "
-pieceToStr (P Black Bishop) = "BB  "
-pieceToStr (P Black Knight) = "BKn "
-pieceToStr (P Black Rook) = "BR  "
-pieceToStr (P Black Pawn) = "BP  "
-pieceToStr (P White King) = "WK  "
-pieceToStr (P White Queen) = "WQ  "
-pieceToStr (P White Bishop) = "WB  "
-pieceToStr (P White Knight) = "WKn "
-pieceToStr (P White Rook) = "WR  "
-pieceToStr (P White Pawn) = "WP  "
+pieceToStr (P Black King) = "BK "
+pieceToStr (P Black Queen) = "BQ "
+pieceToStr (P Black Bishop) = "BB "
+pieceToStr (P Black Knight) = "BN "
+pieceToStr (P Black Rook) = "BR "
+pieceToStr (P Black Pawn) = "BP "
+pieceToStr (P White King) = "WK "
+pieceToStr (P White Queen) = "WQ "
+pieceToStr (P White Bishop) = "WB "
+pieceToStr (P White Knight) = "WN "
+pieceToStr (P White Rook) = "WR "
+pieceToStr (P White Pawn) = "WP "
 
 -- PrettyPrint our board
 printBoard :: Board -> IO ()
 printBoard board = do 
                      pBoardX board 8
-                     putStrLn "   A    B    C    D    E    F    G    H  "
+                     putStrLn "   A   B   C   D   E   F   G   H "
  
 
 -------------------------------------------------------------------------
