@@ -15,6 +15,9 @@ main = play
 play :: IO ()
 play = playGame initialGame
 
+playList :: IO ()
+playList = playGameFromList initialGame firstGame
+
 -------------------------------------------------------------------------
 
 playGame :: Game -> IO ()
@@ -26,6 +29,8 @@ playGame game = do
                     Tie       -> putStrLn "Game tied."
                     Checked   -> do
                                     putStrLn "Check!"
+                                    if (pieceCanDefendKing game) then putStrLn "queen can defend king"
+                                    else putStrLn "other case"
                                     continuePlay game
                     Playing   -> continuePlay game
 
@@ -47,7 +52,55 @@ playGame game = do
                                                             playGame game
                                                 Right (_, game') -> playGame game'
 
+playGameFromList:: Game -> [String] -> IO ()
+playGameFromList game [] = playGame game
+playGameFromList game (input:xs) = do
+                                printBoard (board game)
+                                case (checkGameStatus game) of 
+                                    WhiteWins -> putStrLn "White won."
+                                    BlackWins -> putStrLn "Black won."
+                                    Tie       -> putStrLn "Game tied."
+                                    Checked   -> do
+                                                    putStrLn "Check!"
+                                                    if (pieceCanDefendKing game) then putStrLn "queen can defend king"
+                                                    else putStrLn "other case"
+                                                    continuePlay game
+                                    Playing   -> continuePlay game
 
+                                where
+
+                                continuePlay :: Game -> IO ()
+                                continuePlay game = do
+                                    putStrLn $ (show (current game)) ++ "'s turn: "
+                                    if input == "exit" then return () else 
+                                        if input == "printlog" then (printLog game) else do
+                                            case (getNextMove input) of
+                                                Nothing -> do
+                                                            putStrLn "Invalid input"
+                                                            playGameFromList game (input:xs)
+                                                (Just move) -> case (runStateT (handleTurn move) game) of
+                                                                Left s -> do
+                                                                            putStrLn $ "Uh-oh: " ++ s
+                                                                            playGame game
+                                                                Right (_, game') -> playGameFromList game' xs
+                                                
+firstGame :: [String]
+firstGame = ["E2 E4", "E7 E5",
+             "G1 F3", "F7 F6",
+             "F3 E5", "F6 E5",
+             "D1 H5", "E8 E7",
+             "H5 E5", "E7 F7",
+             "F1 C4", "D7 D5",
+             "C4 D5", "F7 G6",
+             "H2 H4", "H7 H5",
+             "D5 B7", "C8 B7",
+             "E5 F5", "G6 H6",
+             "D2 D4", "G7 G5",
+             "F5 F7", "D8 E7",
+             "H4 G5", "E7 G5",
+             "H1 H5"]
+             
+             
 -------------------------------------------------------------------------
 
 printLog :: Game -> IO ()
@@ -72,6 +125,8 @@ getNextMove _ = Nothing
 
 
 -------------------------------------------------------------------------
+
+-- try to do this with foldm / fold
 
 pBoardX :: Board -> Int -> IO ()
 pBoardX b 1 = do

@@ -460,6 +460,29 @@ somePieceCanMove game = any (tryMove game) sameColorLocations
                         (Just (P (col) _)) | (col==(current game)) -> True
                         otherwise -> False
 
+
+pieceCanDefendKing :: Game -> Bool
+pieceCanDefendKing game = any (tryMove game) [Loc 8 6]
+                where
+                tryMove :: Game -> Location -> Bool
+                tryMove game loc = any (canMove game loc) (nextMoveSet)
+
+                canMove :: Game -> Location -> Location -> Bool
+                canMove game loc loc' = case (runStateT (handleTurn (Move loc loc')) game) of
+                                    Left _ -> False
+                                    Right (_, game') -> True && (not $ isCheck (cp game'))
+
+                nextMoveSet :: [Location]
+                nextMoveSet = [Loc x y | x <- [1..8], y <- [1..8]]                                                           
+
+                sameColorLocations :: [Location]
+                sameColorLocations = filter isSameColor (Map.keys (board game))
+
+                isSameColor :: Location -> Bool
+                isSameColor loc = case (Map.lookup loc (board game)) of
+                        (Just (P (col) _)) | (col==(current game)) -> True
+                        otherwise -> False
+                        
 canSomePieceDefendKing :: Game -> Bool
 canSomePieceDefendKing game = any (tryMove game) sameColorLocations
                 where
