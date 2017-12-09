@@ -23,6 +23,7 @@ import GameLogic
 
 -------------------------------------------------------------------------
 
+                                                                
 -- [QUESTION] How do we test this?
 -- [QUESTION] Arbitrary instances for Location, Piece, Board?
 -- [QUESTION] Is QuickCheck even worth it in this case because all the cases are incredibly complex
@@ -58,44 +59,22 @@ testGetPiece = undefined
 testPrettyPrint :: Test
 testPrettyPrint = undefined
 
-
--- inputToLocation tests, make sure correct format is accepted
--- maybe QuickCheck this?
-tInputToLocation :: Test
-tInputToLocation = "inputToLoc tests" ~: TestList [
-      inputToLocation "E4 E5" ~?= Just (Loc 5 4, Loc 5 5),
-      inputToLocation "F4 C5" ~?= Just (Loc 6 4, Loc 3 5),
-      inputToLocation "A3 B5" ~?= Just (Loc 1 3, Loc 2 5),
-      inputToLocation "G4 J5" ~?= Nothing,
-      inputToLocation "X4 C5" ~?= Nothing,
-      inputToLocation "F9 C5" ~?= Nothing,
-      inputToLocation "F0 C5" ~?= Nothing,
-      inputToLocation "F1 C9" ~?= Nothing,
-      inputToLocation "F1 C0" ~?= Nothing,
-      inputToLocation "F1 " ~?= Nothing,
-      inputToLocation "x C4" ~?= Nothing,
-      inputToLocation "F1 C" ~?= Nothing
-      ]
-
 -- validMove/invalidMove tests
--- TODO: expand to have more interesting cases
--- TODO: check pawns
--- [QUESTION] How would we generate interesting cases for this if we were to use QuickCheck?
 tValidMove :: Test
 tValidMove = "validMove tests" ~: TestList [
       validMove (P White King) (Loc 4 4) (Loc 5 5) ~?= True,
       validMove (P White King) (Loc 4 4) (Loc 4 5) ~?= True,
-	  validMove (P White King) (Loc 4 4) (Loc 3 5) ~?= True,
-	  validMove (P White King) (Loc 4 4) (Loc 3 4) ~?= True,
-	  validMove (P White Queen) (Loc 4 4) (Loc 1 7) ~?= True,
+      validMove (P White King) (Loc 4 4) (Loc 3 5) ~?= True,
+      validMove (P White King) (Loc 4 4) (Loc 3 4) ~?= True,
+      validMove (P White Queen) (Loc 4 4) (Loc 1 7) ~?= True,
       validMove (P White Queen) (Loc 4 4) (Loc 8 8) ~?= True,
-	  validMove (P White Queen) (Loc 4 4) (Loc 4 1) ~?= True,
-	  validMove (P White Queen) (Loc 4 4) (Loc 1 4) ~?= True,
+      validMove (P White Queen) (Loc 4 4) (Loc 4 1) ~?= True,
+      validMove (P White Queen) (Loc 4 4) (Loc 1 4) ~?= True,
       validMove (P White Bishop) (Loc 4 4) (Loc 1 7) ~?= True,
       validMove (P White Bishop) (Loc 4 4) (Loc 8 8) ~?= True,
       validMove (P White Rook) (Loc 4 4) (Loc 4 8) ~?= True,
       validMove (P White Rook) (Loc 4 4) (Loc 8 4) ~?= True,
-	  validMove (P White Knight) (Loc 4 4) (Loc 3 6) ~?= True,
+      validMove (P White Knight) (Loc 4 4) (Loc 3 6) ~?= True,
       validMove (P White Knight) (Loc 4 4) (Loc 6 3) ~?= True
       ]
 
@@ -103,17 +82,17 @@ tInvalidMove :: Test
 tInvalidMove = "invalidMove tests" ~: TestList [
       validMove (P White King) (Loc 4 4) (Loc 5 6) ~?= False,
       validMove (P White King) (Loc 4 4) (Loc 2 5) ~?= False,
-	  validMove (P White King) (Loc 4 4) (Loc 7 5) ~?= False,
-	  validMove (P White King) (Loc 4 4) (Loc 1 4) ~?= False,
-	  validMove (P White Queen) (Loc 4 4) (Loc 3 7) ~?= False,
+      validMove (P White King) (Loc 4 4) (Loc 7 5) ~?= False,
+      validMove (P White King) (Loc 4 4) (Loc 1 4) ~?= False,
+      validMove (P White Queen) (Loc 4 4) (Loc 3 7) ~?= False,
       validMove (P White Queen) (Loc 4 4) (Loc 5 8) ~?= False,
-	  validMove (P White Queen) (Loc 4 4) (Loc 2 3) ~?= False,
-	  validMove (P White Queen) (Loc 4 4) (Loc 1 3) ~?= False,
+      validMove (P White Queen) (Loc 4 4) (Loc 2 3) ~?= False,
+      validMove (P White Queen) (Loc 4 4) (Loc 1 3) ~?= False,
       validMove (P White Bishop) (Loc 4 4) (Loc 4 7) ~?= False,
       validMove (P White Bishop) (Loc 4 4) (Loc 8 4) ~?= False,
       validMove (P White Rook) (Loc 4 4) (Loc 8 8) ~?= False,
       validMove (P White Rook) (Loc 4 4) (Loc 1 1) ~?= False,
-	  validMove (P White Knight) (Loc 4 4) (Loc 4 6) ~?= False,
+      validMove (P White Knight) (Loc 4 4) (Loc 4 6) ~?= False,
       validMove (P White Knight) (Loc 4 4) (Loc 5 3) ~?= False
       ]
 
@@ -122,4 +101,5 @@ tInvalidMove = "invalidMove tests" ~: TestList [
 
 
 -- TODO: test 3 complex regular game states
-
+tGame1 :: Test
+tGame1 = undefined

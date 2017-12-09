@@ -6,6 +6,7 @@ import Data.Char
 import Data.Map (Map)
 import qualified Data.Map as Map
 import GameLogic
+import TransC as T
 
 -------------------------------------------------------------------------
 
@@ -20,69 +21,76 @@ playList = playGameFromList initialGame firstGame
 
 -------------------------------------------------------------------------
 
-playGame :: Game -> IO ()
+playGame :: (Input m, Output m) => Game -> m ()
 playGame game = do
                 printBoard (board game)
                 case (checkGameStatus game) of 
-                    WhiteWins -> putStrLn "White won."
-                    BlackWins -> putStrLn "Black won."
-                    Tie       -> putStrLn "Game tied."
+                    WhiteWins -> T.write "White won.\n"
+                    BlackWins -> T.write "Black won.\n"
+                    Tie       -> T.write "Game tied.\n"
                     Checked   -> do
-                                    putStrLn "Check!"
-                                    if (pieceCanDefendKing game) then putStrLn "queen can defend king"
-                                    else putStrLn "other case"
+                                    T.write "Check!\n"
+                                    if (pieceCanDefendKing game) then T.write "king can defend itself\n"
+                                    else T.write "other case\n"
                                     continuePlay game
                     Playing   -> continuePlay game
 
                 where
 
-                continuePlay :: Game -> IO ()
+                continuePlay :: (Input m, Output m) => Game -> m ()
                 continuePlay game = do
-                    putStr $ (show (current game)) ++ "'s turn: "
-                    input <- getLine
-                    if input == "exit" then return () else 
-                        if input == "printlog" then (printLog game) else do
-                            case (getNextMove input) of
-                                Nothing -> do
-                                            putStrLn "Invalid input"
-                                            playGame game
-                                (Just move) -> case (runStateT (handleTurn move) game) of
-                                                Left s -> do
-                                                            putStrLn $ "Uh-oh: " ++ s
-                                                            playGame game
-                                                Right (_, game') -> playGame game'
+                    T.write $ (show (current game)) ++ "'s turn: "
+                    ms <- T.input
+                    case ms of
+                        Nothing -> playGame game
+                        (Just input) -> 
+                            if input == "exit" then return () else 
+                                if input == "printlog" then (printLog game) else do
+                                    case (getNextMove input) of
+                                        Nothing -> do
+                                                    T.write "Invalid input\n"
+                                                    playGame game
+                                        (Just move) -> case (runStateT (handleTurn move) game) of
+                                                        Left s -> do
+                                                                    T.write $ "Uh-oh: " ++ s ++ "\n"
+                                                                    playGame game
+                                                        Right (_, game') -> playGame game'
 
-playGameFromList:: Game -> [String] -> IO ()
+playGameFromList :: (Input m, Output m) => Game -> [String] -> m ()
 playGameFromList game [] = playGame game
 playGameFromList game (input:xs) = do
-                                printBoard (board game)
-                                case (checkGameStatus game) of 
-                                    WhiteWins -> putStrLn "White won."
-                                    BlackWins -> putStrLn "Black won."
-                                    Tie       -> putStrLn "Game tied."
-                                    Checked   -> do
-                                                    putStrLn "Check!"
-                                                    if (pieceCanDefendKing game) then putStrLn "queen can defend king"
-                                                    else putStrLn "other case"
-                                                    continuePlay game
-                                    Playing   -> continuePlay game
+                                    case (checkGameStatus game) of 
+                                        WhiteWins -> T.write ""
+                                        BlackWins -> T.write ""
+                                        Tie       -> T.write ""
+                                        Checked   -> do
+                                                        T.write ""
+                                                        if (pieceCanDefendKing game) then T.write ""
+                                                        else T.write ""
+                                                        continuePlay game
+                                        Playing   -> continuePlay game
 
-                                where
+                                    where
 
-                                continuePlay :: Game -> IO ()
-                                continuePlay game = do
-                                    putStrLn $ (show (current game)) ++ "'s turn: "
-                                    if input == "exit" then return () else 
-                                        if input == "printlog" then (printLog game) else do
-                                            case (getNextMove input) of
-                                                Nothing -> do
-                                                            putStrLn "Invalid input"
-                                                            playGameFromList game (input:xs)
-                                                (Just move) -> case (runStateT (handleTurn move) game) of
-                                                                Left s -> do
-                                                                            putStrLn $ "Uh-oh: " ++ s
-                                                                            playGame game
-                                                                Right (_, game') -> playGameFromList game' xs
+                                    continuePlay :: (Input m, Output m) => Game -> m ()
+                                    continuePlay game = do
+                                        T.write ""
+                                        ms <- T.input
+                                        case ms of
+                                            Nothing -> playGame game
+                                            (Just input) -> 
+                                                if input == "exit" then return () else 
+                                                    if input == "printlog" then (printLog game) else do
+                                                        case (getNextMove input) of
+                                                            Nothing -> do
+                                                                        T.write ""
+                                                                        playGameFromList game (input:xs)
+                                                            (Just move) -> case (runStateT (handleTurn move) game) of
+                                                                            Left s -> do
+                                                                                        T.write ""
+                                                                                        playGame game
+                                                                            Right (_, game') -> playGameFromList game' xs
+
                                                 
 firstGame :: [String]
 firstGame = ["E2 E4", "E7 E5",
@@ -103,8 +111,8 @@ firstGame = ["E2 E4", "E7 E5",
              
 -------------------------------------------------------------------------
 
-printLog :: Game -> IO ()
-printLog game = mapM_ putStrLn (map show (moveLog game))
+printLog :: Output m => Game -> m ()
+printLog game = mapM_ T.write (map show (moveLog game))
 
 -- this throws exceptions if not a digit - handle that
 getNextMove :: String -> Maybe Move
@@ -128,28 +136,28 @@ getNextMove _ = Nothing
 
 -- try to do this with foldm / fold
 
-pBoardX :: Board -> Int -> IO ()
+pBoardX :: Output m => Board -> Int -> m ()
 pBoardX b 1 = do
-               putStr "1 "
+               T.write "1 "
                pBoardXY b 1 1
 pBoardX b x = do
-               putStr ((show x)++" ")
+               T.write ((show x)++" ")
                pBoardXY b x 1
                pBoardX b (x-1)
 
-pBoardXY :: Board -> Int -> Int -> IO ()
+pBoardXY :: Output m => Board -> Int -> Int -> m ()
 pBoardXY b y 8 = do
                    printPiece b 8 y
-                   putStrLn ""
+                   T.write "\n"
 pBoardXY b y x = do 
                    printPiece b x y
-                   putStr " "
+                   T.write " "
                    pBoardXY b y (x+1)
 
-printPiece :: Board -> Int -> Int -> IO ()
+printPiece :: Output m => Board -> Int -> Int -> m ()
 printPiece b x y = case (Map.lookup (Loc x y) b) of 
-                     Nothing -> putStr " x "
-                     (Just p) -> putStr (pieceToStr p)
+                     Nothing -> T.write " x "
+                     (Just p) -> T.write (pieceToStr p)
 
 pieceToStr :: Piece -> String
 pieceToStr (P Black King) = "BK "
@@ -166,10 +174,10 @@ pieceToStr (P White Rook) = "WR "
 pieceToStr (P White Pawn) = "WP "
 
 -- PrettyPrint our board
-printBoard :: Board -> IO ()
+printBoard :: Output m => Board -> m ()
 printBoard board = do 
                      pBoardX board 8
-                     putStrLn "   A   B   C   D   E   F   G   H "
+                     T.write "   A   B   C   D   E   F   G   H \n"
  
 
 -------------------------------------------------------------------------

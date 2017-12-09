@@ -116,9 +116,9 @@ handleTurn move = do
 -- whether or not the Piece can move to that Location 
 -- according to the rules for each piece
 validMove :: Piece -> Location -> Location -> Bool
-validMove (P Black King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 8)
+validMove (P Black King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 8 && y1 == y2)
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
-validMove (P White King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 1)
+validMove (P White King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 1 && y1 == y2)
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
 validMove (P _ Queen) (Loc x1 y1) (Loc x2 y2) = validMove (P White Bishop) (Loc x1 y1) (Loc x2 y2) ||
                                                 validMove (P White Rook) (Loc x1 y1) (Loc x2 y2)
@@ -473,7 +473,7 @@ pieceCanDefendKing game = any (tryMove game) [Loc 8 6]
                                     Right (_, game') -> True && (not $ isCheck (cp game'))
 
                 nextMoveSet :: [Location]
-                nextMoveSet = [Loc x y | x <- [1..8], y <- [1..8]]                                                           
+                nextMoveSet = [Loc x y | x <- [3], y <- [8]]                                                          
 
                 sameColorLocations :: [Location]
                 sameColorLocations = filter isSameColor (Map.keys (board game))
