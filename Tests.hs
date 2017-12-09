@@ -20,10 +20,20 @@ import Control.Monad.State (MonadState(..), StateT, State, runState, runStateT)
 import qualified Control.Monad.State as S
 
 import GameLogic
+import PlayChess
 
 -------------------------------------------------------------------------
 
-                                                                
+playGameTest :: Game -> [String] -> Game
+playGameTest game [] = game
+playGameTest game (input:xs) = do
+                                case (getNextMove input) of
+                                    Nothing -> do
+                                                playGameTest game (input:xs)
+                                    (Just move) -> case (runStateT (handleTurn move) game) of
+                                                    Left s -> game
+                                                    Right (_, game') -> playGameTest game' xs
+                                                                    
 -- [QUESTION] How do we test this?
 -- [QUESTION] Arbitrary instances for Location, Piece, Board?
 -- [QUESTION] Is QuickCheck even worth it in this case because all the cases are incredibly complex

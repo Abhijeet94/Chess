@@ -74,22 +74,18 @@ playGameFromList game (input:xs) = do
 
                                     continuePlay :: (Input m, Output m) => Game -> m ()
                                     continuePlay game = do
-                                        T.write ""
-                                        ms <- T.input
-                                        case ms of
-                                            Nothing -> playGame game
-                                            (Just input) -> 
-                                                if input == "exit" then return () else 
-                                                    if input == "printlog" then (printLog game) else do
-                                                        case (getNextMove input) of
-                                                            Nothing -> do
-                                                                        T.write ""
-                                                                        playGameFromList game (input:xs)
-                                                            (Just move) -> case (runStateT (handleTurn move) game) of
-                                                                            Left s -> do
-                                                                                        T.write ""
-                                                                                        playGame game
-                                                                            Right (_, game') -> playGameFromList game' xs
+                                                        T.write ""
+                                                        if input == "exit" then return () else 
+                                                            if input == "printlog" then (printLog game) else do
+                                                                case (getNextMove input) of
+                                                                    Nothing -> do
+                                                                                T.write ""
+                                                                                playGameFromList game (input:xs)
+                                                                    (Just move) -> case (runStateT (handleTurn move) game) of
+                                                                                    Left s -> do
+                                                                                                T.write ""
+                                                                                                playGame game
+                                                                                    Right (_, game') -> playGameFromList game' xs
 
                                                 
 firstGame :: [String]
