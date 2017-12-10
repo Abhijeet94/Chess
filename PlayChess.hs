@@ -10,10 +10,10 @@ import TransC as T
 
 -------------------------------------------------------------------------
 
-main :: IO ()
+main :: (Input m, Output m) => m ()
 main = play
 
-play :: IO ()
+play :: (Input m, Output m) => m ()
 play = playGame initialGame True
 
 -------------------------------------------------------------------------
@@ -31,8 +31,6 @@ playGame game doPrint = do
                             Tie       -> printb "Game tied.\n" doPrint
                             Checked   -> do
                                             printb "Check!\n" doPrint
-                                            --if (pieceCanDefendKing game) then T.write "king can defend itself\n"
-                                            --else print "other case\n"
                                             continuePlay game
                             Playing   -> continuePlay game
 

@@ -83,13 +83,11 @@ playGameTest :: Game -> [String] -> Game
 playGameTest game [] = game
 playGameTest game (input:xs) = do
                                 case (getNextMove input) of
-                                    Nothing -> do
-                                                playGameTest game (input:xs)
-                                    (Just move) -> case (runStateT (handleTurn move) game) of
-                                                    Left s -> game
-                                                    Right (_, game') -> playGameTest game' xs
-
-
+                                  Nothing -> do
+                                              playGameTest game (input:xs)
+                                  (Just move) -> case (runStateT (handleTurn move) game) of
+                                                  Left s -> game
+                                                  Right (_, game') -> playGameTest game' xs
 
 -- ALL TESTS
 allTests :: Test
@@ -416,19 +414,19 @@ tKingCantMoveWhenBlocked = TestList [
 
 tKingCantMoveIntoCheck :: Test
 tKingCantMoveIntoCheck = TestList [
-                    Just (P White King) ~?= Map.lookup (Loc 5 2) b,
+                    Just (P White King) ~?= Map.lookup (Loc 5 2) b
                  ] where b = board (playGameTest bishopGame ["E1 E2","E8 D7",
                                                              "E2 F3"]) 
 
 tKingCheckBishop :: Test
 tKingCheckBishop = TestList [
-                    checkGameStatus g ~?= Checked,
-                 ] where b = board (playGameTest bishopGame ["E1 E2","C6 F3"]) 
+                    checkGameStatus g ~?= Checked
+                 ] where g = playGameTest bishopGame ["E1 E2","C6 F3"]
 
 tKingCheckQueen :: Test
 tKingCheckQueen = TestList [
-                    checkGameStatus g ~?= Checked,
-                 ] where b = board (playGameTest queenGame ["E1 E2","C6 F3"]) 
+                    checkGameStatus g ~?= Checked
+                 ] where g = playGameTest queenGame ["E1 E2","C6 F3"]
 
 tKingCheckKnight :: Test
 tKingCheckKnight = undefined
@@ -440,13 +438,29 @@ tKingCheckPawn :: Test
 tKingCheckPawn = undefined
  
 tKingCastleL :: Test 
-tKingCastleL = undefined
+tKingCastleL = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 3 1) b,
+                    Just (P White Rook) ~?= Map.lookup (Loc 4 1) b,
+                    Just (P Black King) ~?= Map.lookup (Loc 3 8) b,
+                    Just (P Black Rook) ~?= Map.lookup (Loc 4 8) b
+                 ] where b = board (playGameTest castleGame ["E1 C1","E8 C8"]) 
 
 tKingCastleR :: Test
-tKingCastleR = undefined
+tKingCastleR = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 7 1) b,
+                    Just (P White Rook) ~?= Map.lookup (Loc 6 1) b,
+                    Just (P Black King) ~?= Map.lookup (Loc 7 8) b,
+                    Just (P Black Rook) ~?= Map.lookup (Loc 6 8) b
+                 ] where b = board (playGameTest castleGame ["E1 G1","E8 G8"]) 
+
 
 tKingNoCastleIfMoved :: Test
-tKingNoCastleIfMoved = undefined
+tKingNoCastleIfMoved = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 3 1) b,
+                    Just (P White Rook) ~?= Map.lookup (Loc 1 1) b,
+                    Just (P Black King) ~?= Map.lookup (Loc 3 8) b,
+                    Just (P Black Rook) ~?= Map.lookup (Loc 1 8) b
+                 ] where b = board (playGameTest castleGame ["E1 C1","E8 C8"]) 
 
 tKingNoCastleIfRookMoved :: Test
 tKingNoCastleIfRookMoved = undefined
@@ -484,7 +498,8 @@ gameSimple = ["E2 E4", "E7 E5",
              "G1 F3", "B8 C6",
              "F1 B5", "A7 A6"]
              
--- Game ending in checkmate (White) from https://en.wikibooks.org/wiki/Chess/Sample_chess_game
+-- Game ending in checkmate (White) from
+-- https://en.wikibooks.org/wiki/Chess/Sample_chess_game
 gameMate :: [String]
 gameMate = ["E2 E4", "E7 E5",
              "G1 F3", "F7 F6",

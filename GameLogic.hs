@@ -95,9 +95,9 @@ handleTurn move = do
 -- whether or not the Piece can move to that Location 
 -- according to the rules for each piece
 validMove :: Piece -> Location -> Location -> Bool
-validMove (P Black King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 8 && y1 == y2)
+validMove (P Black King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 8 && y1 == y2 && x1 == 5)
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
-validMove (P White King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 1 && y1 == y2)
+validMove (P White King) (Loc x1 y1) (Loc x2 y2) = (dist <= 2 && dist > 0) || ((x2 == 3 || x2 == 7) && y2 == 1 && y1 == y2 && x1 == 5)
                                     where dist = (x1 - x2)^2 + (y1 - y2)^2
 validMove (P _ Queen) (Loc x1 y1) (Loc x2 y2) = validMove (P White Bishop) (Loc x1 y1) (Loc x2 y2) ||
                                                 validMove (P White Rook) (Loc x1 y1) (Loc x2 y2)
@@ -345,7 +345,7 @@ checkGameStatus game = if (isCheck game)
                             else Tie
 
 isCheck :: Game -> Bool
-isCheck game = (doesOppPlayerHaveAKingToContinueGame game) && any tryAttack oppPieces
+isCheck game = (otherPlayerHasKing game) && any tryAttack oppPieces
             where 
 
             tryAttack :: Location -> Bool
@@ -414,22 +414,36 @@ somePieceCanMove game = any (tryMove game) sameColorLocations
                 possibleNextMoves game loc = case ((Map.lookup loc (board game)), loc) of
                                     (Nothing, _) -> []
                                     (Just (P _ King), Loc x y) -> [] -- already taken care of
-                                    (Just (P _ Bishop), Loc x y) -> [Loc (x+1) (y+1), Loc (x-1) (y+1),
-                                                                     Loc (x+1) (y-1), Loc (x-1) (y-1)]                                
-                                    (Just (P _ Rook), Loc x y) ->   [Loc (x) (y+1), Loc (x-1) (y),
-                                                                     Loc (x+1) (y), Loc (x) (y-1)]
-                                    (Just (P _ Queen), Loc x y) ->   [Loc (x) (y+1), Loc (x-1) (y),
-                                                                     Loc (x+1) (y), Loc (x) (y-1),
-                                                                     Loc (x+1) (y+1), Loc (x-1) (y+1),
-                                                                     Loc (x+1) (y-1), Loc (x-1) (y-1)]
-                                    (Just (P _ Knight), Loc x y) -> [Loc (x-2) (y+1), Loc (x-1) (y+2),
-                                                                     Loc (x+1) (y+2), Loc (x+2) (y+1),
-                                                                     Loc (x-2) (y-1), Loc (x-1) (y-2),
-                                                                     Loc (x+1) (y-2), Loc (x+2) (y-1)]
-                                    (Just (P White Pawn), Loc x y) -> [Loc (x-1) (y+1), Loc (x) (y+1),
-                                                                        Loc (x+1) (y+1)]
-                                    (Just (P Black Pawn), Loc x y) -> [Loc (x-1) (y-1), Loc (x) (y-1),
-                                                                        Loc (x+1) (y-1)]                                                                   
+                                    (Just (P _ Bishop), Loc x y) -> [Loc (x+1) (y+1), 
+                                                                     Loc (x-1) (y+1),
+                                                                     Loc (x+1) (y-1), 
+                                                                     Loc (x-1) (y-1)]                                
+                                    (Just (P _ Rook), Loc x y) ->   [Loc (x) (y+1), 
+                                                                     Loc (x-1) (y),
+                                                                     Loc (x+1) (y), 
+                                                                     Loc (x) (y-1)]
+                                    (Just (P _ Queen), Loc x y) ->   [Loc (x) (y+1),  
+                                                                      Loc (x-1) (y),
+                                                                      Loc (x+1) (y), 
+                                                                      Loc (x) (y-1),
+                                                                      Loc (x+1) (y+1), 
+                                                                      Loc (x-1) (y+1),
+                                                                      Loc (x+1) (y-1), 
+                                                                      Loc (x-1) (y-1)]
+                                    (Just (P _ Knight), Loc x y) -> [Loc (x-2) (y+1), 
+                                                                     Loc (x-1) (y+2),
+                                                                     Loc (x+1) (y+2), 
+                                                                     Loc (x+2) (y+1),
+                                                                     Loc (x-2) (y-1), 
+                                                                     Loc (x-1) (y-2),
+                                                                     Loc (x+1) (y-2), 
+                                                                     Loc (x+2) (y-1)]
+                                    (Just (P White Pawn), Loc x y) -> [Loc (x-1) (y+1), 
+                                                                       Loc (x) (y+1),
+                                                                       Loc (x+1) (y+1)]
+                                    (Just (P Black Pawn), Loc x y) -> [Loc (x-1) (y-1), 
+                                                                       Loc (x) (y-1),
+                                                                       Loc (x+1) (y-1)]                                                                   
 
                 sameColorLocations :: [Location]
                 sameColorLocations = filter isSameColor (Map.keys (board game))
@@ -495,13 +509,15 @@ cp game = Game (board game) (otherPlayer $ current game) (moveLog game)
 -- (handleTurn, movePiece etc) as isCheck also uses 
 -- handleTurn inside. But this handle turn would have removed
 -- the king, because of which the function below will not pass.
-doesOppPlayerHaveAKingToContinueGame :: Game -> Bool
-doesOppPlayerHaveAKingToContinueGame game = case (Map.foldrWithKey (kingFunc) (Loc (-1) (-1)) (board game)) of
-                                                    (Loc x y) | x == -1 && y == -1 -> False
-                                                    otherwise -> True
-                                            where
-                                                kingFunc loc (P pl King) _ | pl == (otherPlayer $ current game) = loc
-                                                kingFunc _ _ prev = prev
+otherPlayerHasKing :: Game -> Bool
+otherPlayerHasKing game = case foldResult of
+                                    (Loc x y) | x == -1 && y == -1 -> False
+                                    otherwise -> True
+                            where
+                                foldResult = (Map.foldrWithKey (kingFunc) 
+                                             (Loc (-1) (-1)) (board game))
+                                kingFunc loc (P pl King) _ | pl == (otherPlayer $ current game) = loc
+                                kingFunc _ _ prev = prev
 
 gameLost :: Player -> GameStatus
 gameLost White = BlackWins
