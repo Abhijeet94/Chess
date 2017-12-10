@@ -14,46 +14,42 @@ main :: (Input m, Output m) => m ()
 main = play
 
 play :: (Input m, Output m) => m ()
-play = playGame initialGame True
+play = playGame initialGame 
 
 -------------------------------------------------------------------------
 
-printb :: Output m => String -> Bool -> m ()
-printb s b = if b then T.write s else T.write ""
+playGame :: (Input m, Output m) => Game -> m ()
+playGame game = do
+                    printBoard (board game)
+                    case (checkGameStatus game) of 
+                        WhiteWins -> T.write "White won.\n" 
+                        BlackWins -> T.write "Black won.\n" 
+                        Tie       -> T.write "Game tied.\n" 
+                        Checked   -> do
+                                        T.write "Check!\n" 
+                                        continuePlay game
+                        Playing   -> continuePlay game
 
-playGame :: (Input m, Output m) => Game -> Bool -> m ()
-playGame game doPrint = do
-                        if doPrint then printBoard (board game)
-                        else printb "" doPrint
-                        case (checkGameStatus game) of 
-                            WhiteWins -> printb "White won.\n" doPrint
-                            BlackWins -> printb "Black won.\n" doPrint
-                            Tie       -> printb "Game tied.\n" doPrint
-                            Checked   -> do
-                                            printb "Check!\n" doPrint
-                                            continuePlay game
-                            Playing   -> continuePlay game
+                    where
 
-                        where
-
-                        continuePlay :: (Input m, Output m) => Game -> m ()
-                        continuePlay game = do
-                            printb ((show (current game)) ++ "'s turn: \n") doPrint
-                            ms <- T.input
-                            case ms of
-                                Nothing -> playGame game False
-                                (Just input) -> 
-                                    if input == "exit" then return () else 
-                                        if input == "printlog" then (printLog game) else do
-                                            case (getNextMove input) of
-                                                Nothing -> do
-                                                            printb "Invalid input\n" True
-                                                            playGame game False
-                                                (Just move) -> case (runStateT (handleTurn move) game) of
-                                                                Left s -> do
-                                                                            printb ("Uh-oh: " ++ s ++ "\n") True
-                                                                            playGame game False
-                                                                Right (_, game') -> playGame game' True
+                    continuePlay :: (Input m, Output m) => Game -> m ()
+                    continuePlay game = do
+                        T.write ((show (current game)) ++ "'s turn: \n") 
+                        ms <- T.input
+                        case ms of
+                            Nothing -> return()
+                            (Just input) -> 
+                                if input == "exit" then return () else 
+                                    if input == "printlog" then (printLog game) else do
+                                        case (getNextMove input) of
+                                            Nothing -> do
+                                                        T.write "Invalid input\n" 
+                                                        playGame game 
+                                            (Just move) -> case (runStateT (handleTurn move) game) of
+                                                            Left s -> do
+                                                                        T.write ("Uh-oh: " ++ s ++ "\n") 
+                                                                        playGame game 
+                                                            Right (_, game') -> playGame game' 
              
 -------------------------------------------------------------------------
 

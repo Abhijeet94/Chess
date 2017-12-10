@@ -22,14 +22,13 @@ date: November 29, 2017
 > instance Output IO where
 >    write = putStr
 > instance Input IO where
->    input = do x <- hReady stdin
->               if x then Just <$> getLine else return Nothing
+>    input = Just <$> getLine
 
 > -- | Wait for some input to appear, and when it does, repeat it.
 > echo :: (Input m, Output m) => m ()
 > echo = do ms <- input
 >           case ms of
->                    Just str -> write "" --write str >> write "\n"
+>                    Just str -> write str >> write "\n"
 >                    Nothing  -> echo
 
 > type FakeIO = S.State FakeState
