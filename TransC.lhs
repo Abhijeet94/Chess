@@ -52,7 +52,7 @@ And here is a simple program that does some IO in an arbitrary monad.
 > echo :: (Input m, Output m) => m ()
 > echo = do ms <- input
 >           case ms of
->                    Just str -> write str >> write "\n"
+>                    Just str -> write "" --write str >> write "\n"
 >                    Nothing  -> echo
 
 If I run this program in ghci, using the `IO` monad by default, I can see that

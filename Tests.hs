@@ -21,6 +21,7 @@ import qualified Control.Monad.State as S
 
 import GameLogic
 import PlayChess
+import TransC
 
 -------------------------------------------------------------------------
 castleGame :: Game
@@ -89,6 +90,14 @@ playGameTest game (input:xs) = do
                                                     Right (_, game') -> playGameTest game' xs
 
 
+
+-- ALL TESTS
+allTests :: Test
+allTests = TestList [vMoveTests,pawnTests,
+                     knightTests,bishopTests,
+                     rookTests,queenTests,
+                     kingTests,gameStatusTests,
+                     gameTests]
 
                                                    
 -- validMove/invalidMove tests except pawn
@@ -379,21 +388,47 @@ tQueenCantGoThroughSameColor = TestList [
                                                        "C1 F1","C8 F8"]) 
                                                        
 -- king tests
-
+kingTests :: Test
+kingTests = TestList [tKingMoveAllDirs,tKingCantMoveWhenBlocked,
+                      tKingCantMoveIntoCheck,tKingCheckBishop,
+                      tKingCheckBishop,tKingCheckQueen,
+                      tKingCheckKnight,tKingCheckRook,
+                      tKingCheckPawn,tKingCastleL,
+                      tKingCastleR,tKingNoCastleIfMoved,
+                      tKingNoCastleIfRookMoved] 
+                      
 tKingMoveAllDirs :: Test
-tKingMoveAllDirs = undefined
+tKingMoveAllDirs = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 4 1) b,
+                    Just (P Black King) ~?= Map.lookup (Loc 4 8) b
+                 ] where b = board (playGameTest castleGame ["E1 E2","E8 E7",
+                                                             "E2 D3","E7 D6",
+                                                             "D3 C2","D6 C7",
+                                                             "C2 C1","C7 C8",
+                                                             "C1 D1","C8 D8"]) 
 
 tKingCantMoveWhenBlocked :: Test
-tKingCantMoveWhenBlocked = undefined
+tKingCantMoveWhenBlocked = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 4 2) b,
+                    Just (P Black King) ~?= Map.lookup (Loc 4 7) b
+                 ] where b = board (playGameTest bishopGame ["E1 D2","E8 D7",
+                                                             "D2 C3","D7 C6"]) 
 
 tKingCantMoveIntoCheck :: Test
-tKingCantMoveIntoCheck = undefined
+tKingCantMoveIntoCheck = TestList [
+                    Just (P White King) ~?= Map.lookup (Loc 5 2) b,
+                 ] where b = board (playGameTest bishopGame ["E1 E2","E8 D7",
+                                                             "E2 F3"]) 
 
 tKingCheckBishop :: Test
-tKingCheckBishop = undefined
+tKingCheckBishop = TestList [
+                    checkGameStatus g ~?= Checked,
+                 ] where b = board (playGameTest bishopGame ["E1 E2","C6 F3"]) 
 
 tKingCheckQueen :: Test
-tKingCheckQueen = undefined
+tKingCheckQueen = TestList [
+                    checkGameStatus g ~?= Checked,
+                 ] where b = board (playGameTest queenGame ["E1 E2","C6 F3"]) 
 
 tKingCheckKnight :: Test
 tKingCheckKnight = undefined
@@ -416,11 +451,22 @@ tKingNoCastleIfMoved = undefined
 tKingNoCastleIfRookMoved :: Test
 tKingNoCastleIfRookMoved = undefined
 
+tCantMoveOtherPiecesIfChecked :: Test
+tCantMoveOtherPiecesIfChecked = undefined
+
 -- tests to check for endgame scenarios 
--- check for player win
+gameStatusTests :: Test
+gameStatusTests = TestList [tCheckPlaying,tCheckMate,tCheckTie]
+
+-- check for still playing
+tCheckPlaying :: Test
+tCheckPlaying = checkGameStatus g ~?= Playing 
+                    where g = playGameTest initialGame gameSimple
+
+-- check for win
 tCheckMate :: Test
 tCheckMate = checkGameStatus g ~?= WhiteWins 
-                    where g = playGameTest initialGame gameMateW 
+                    where g = playGameTest initialGame gameMate
                     
 -- check for tie
 tCheckTie :: Test
@@ -428,19 +474,19 @@ tCheckTie = checkGameStatus g ~?= Tie
                     where g = playGameTest initialGame gameTie 
 
 
--- [QUESTION] How do we test this?  Is this possible to QuickCheck?  Do we even have to test this?
--- make sure the board is printed the way we want it: create a board, input the text that's printed, and check if they match
-testPrettyPrint :: Test
-testPrettyPrint = undefined
-
-
--- TODO: test that check can't occur through other pieces
-
--- Complex game tests
+-- Complex game tests with FakeIO
+gameTests :: Test
+gameTests = TestList [tInitialBoard,tGameSimple,tGameMate,tGameTie]
 
 -- Simple game from the Wikipedia page on chess
 gameSimple :: [String]
 gameSimple = ["E2 E4", "E7 E5",
+             "G1 F3", "B8 C6",
+             "F1 B5", "A7 A6"]
+             
+-- Game ending in checkmate (White) from https://en.wikibooks.org/wiki/Chess/Sample_chess_game
+gameMate :: [String]
+gameMate = ["E2 E4", "E7 E5",
              "G1 F3", "F7 F6",
              "F3 E5", "F6 E5",
              "D1 H5", "E8 E7",
@@ -454,16 +500,10 @@ gameSimple = ["E2 E4", "E7 E5",
              "F5 F7", "D8 E7",
              "H4 G5", "E7 G5",
              "H1 H5"]
-             
--- Game ending in checkmate (White) from https://en.wikibooks.org/wiki/Chess/Sample_chess_game
-gameMateW :: [String]
-gameMateW = ["E2 E4", "E7 E5",
-             "G1 F3", "B8 C6",
-             "F1 B5", "A7 A6"]
 
 -- Game ending in stalemate from https://www.youtube.com/watch?v=abB2_Em3Ixo
 gameTie :: [String]
-gameTie = ["E2 E3", "A7 A5",
+gameTie =   ["E2 E3", "A7 A5",
              "D1 H5", "A8 A6",
              "H5 A5", "H7 H5",
              "A5 C7", "A6 H6",
@@ -474,6 +514,15 @@ gameTie = ["E2 E3", "A7 A5",
              "B8 C8", "F7 G6",
              "C8 E6"]             
 
--- TODO: test 3 complex regular game states
-tGame1 :: Test
-tGame1 = undefined
+-- This is for regression testing with printing
+tInitialBoard :: Test
+tInitialBoard = runFakeIO (printBoard (board initialGame)) [] ~?= ["8 ","BR "," ","BN "," ","BB "," ","BQ "," ","BK "," ","BB "," ","BN "," ","BR ","\n","7 ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP ","\n","6 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","4 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP ","\n","1 ","WR "," ","WN "," ","WB "," ","WQ "," ","WK "," ","WB "," ","WN "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
+
+tGameSimple :: Test
+tGameSimple = runFakeIO (printBoard (board (playGameTest initialGame gameSimple))) [] ~?= ["8 ","BR "," "," x "," ","BB "," ","BQ "," ","BK "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," ","BP "," ","BP "," ","BP "," "," x "," ","BP "," ","BP "," ","BP ","\n","6 ","BP "," "," x "," ","BN "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","5 "," x "," ","WB "," "," x "," "," x "," ","BP "," "," x "," "," x "," "," x ","\n","4 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," ","WN "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," ","WP ","\n","1 ","WR "," ","WN "," ","WB "," ","WQ "," ","WK "," "," x "," "," x "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
+
+tGameMate :: Test
+tGameMate = runFakeIO (printBoard (board (playGameTest initialGame gameMate))) [] ~?= ["8 ","BR "," ","BN "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 ","BP "," ","BB "," ","BP "," "," x "," "," x "," ","WQ "," "," x "," "," x ","\n","6 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BK ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BQ "," ","WR ","\n","4 "," x "," "," x "," "," x "," ","WP "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," "," x "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," "," x "," "," x "," "," x ","\n","   A   B   C   D   E   F   G   H \n"]
+
+tGameTie :: Test
+tGameTie = runFakeIO (printBoard (board (playGameTest initialGame gameTie))) [] ~?= ["8 "," x "," "," x "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," "," x "," "," x "," "," x "," ","BP "," "," x "," ","BP "," ","BQ ","\n","6 "," x "," "," x "," "," x "," "," x "," ","WQ "," ","BP "," ","BK "," ","BR ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BP ","\n","4 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","WP ","\n","3 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," ","WB "," ","WN "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]

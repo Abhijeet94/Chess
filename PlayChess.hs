@@ -16,9 +16,6 @@ main = play
 play :: IO ()
 play = playGame initialGame True
 
-playList :: IO ()
-playList = playGameFromList initialGame ["B1 C3","G8 F6","C3 B5","F6 G4","B5 D6","G4 E3"]
-
 -------------------------------------------------------------------------
 
 printb :: Output m => String -> Bool -> m ()
@@ -59,56 +56,6 @@ playGame game doPrint = do
                                                                             printb ("Uh-oh: " ++ s ++ "\n") True
                                                                             playGame game False
                                                                 Right (_, game') -> playGame game' True
-                
-
-playGameFromList :: (Input m, Output m) => Game -> [String] -> m ()
-playGameFromList game [] = playGame game True
-playGameFromList game (input:xs) = do
-                                    case (checkGameStatus game) of 
-                                        WhiteWins -> T.write ""
-                                        BlackWins -> T.write ""
-                                        Tie       -> T.write ""
-                                        Checked   -> do
-                                                        T.write ""
-                                                        if (pieceCanDefendKing game) then T.write ""
-                                                        else T.write ""
-                                                        continuePlay game
-                                        Playing   -> continuePlay game
-
-                                    where
-
-                                    continuePlay :: (Input m, Output m) => Game -> m ()
-                                    continuePlay game = do
-                                                        T.write ""
-                                                        if input == "exit" then return () else 
-                                                            if input == "printlog" then (printLog game) else do
-                                                                case (getNextMove input) of
-                                                                    Nothing -> do
-                                                                                T.write ""
-                                                                                playGameFromList game (input:xs)
-                                                                    (Just move) -> case (runStateT (handleTurn move) game) of
-                                                                                    Left s -> do
-                                                                                                T.write ""
-                                                                                                playGame game True
-                                                                                    Right (_, game') -> playGameFromList game' xs
-
-                                                
-firstGame :: [String]
-firstGame = ["E2 E4", "E7 E5",
-             "G1 F3", "F7 F6",
-             "F3 E5", "F6 E5",
-             "D1 H5", "E8 E7",
-             "H5 E5", "E7 F7",
-             "F1 C4", "D7 D5",
-             "C4 D5", "F7 G6",
-             "H2 H4", "H7 H5",
-             "D5 B7", "C8 B7",
-             "E5 F5", "G6 H6",
-             "D2 D4", "G7 G5",
-             "F5 F7", "D8 E7",
-             "H4 G5", "E7 G5",
-             "H1 H5"]
-             
              
 -------------------------------------------------------------------------
 

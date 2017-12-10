@@ -48,6 +48,7 @@ initialGame = Game (Map.fromList pos) White []
                         (Loc 5 7, P Black Pawn), (Loc 6 7, P Black Pawn),
                         (Loc 7 7, P Black Pawn), (Loc 8 7, P Black Pawn)]
                         
+
 -------------------------------------------------------------------------
 
 -- throws error inside the state monad ChessBoard
