@@ -14,50 +14,55 @@ main :: IO ()
 main = play
 
 play :: IO ()
-play = playGame initialGame
+play = playGame initialGame True
 
 playList :: IO ()
-playList = playGameFromList initialGame firstGame
+playList = playGameFromList initialGame ["B1 C3","G8 F6","C3 B5","F6 G4","B5 D6","G4 E3"]
 
 -------------------------------------------------------------------------
 
-playGame :: (Input m, Output m) => Game -> m ()
-playGame game = do
-                printBoard (board game)
-                case (checkGameStatus game) of 
-                    WhiteWins -> T.write "White won.\n"
-                    BlackWins -> T.write "Black won.\n"
-                    Tie       -> T.write "Game tied.\n"
-                    Checked   -> do
-                                    T.write "Check!\n"
-                                    if (pieceCanDefendKing game) then T.write "king can defend itself\n"
-                                    else T.write "other case\n"
-                                    continuePlay game
-                    Playing   -> continuePlay game
+printb :: Output m => String -> Bool -> m ()
+printb s b = if b then T.write s else T.write ""
 
-                where
+playGame :: (Input m, Output m) => Game -> Bool -> m ()
+playGame game doPrint = do
+                        if doPrint then printBoard (board game)
+                        else printb "" doPrint
+                        case (checkGameStatus game) of 
+                            WhiteWins -> printb "White won.\n" doPrint
+                            BlackWins -> printb "Black won.\n" doPrint
+                            Tie       -> printb "Game tied.\n" doPrint
+                            Checked   -> do
+                                            printb "Check!\n" doPrint
+                                            --if (pieceCanDefendKing game) then T.write "king can defend itself\n"
+                                            --else print "other case\n"
+                                            continuePlay game
+                            Playing   -> continuePlay game
 
-                continuePlay :: (Input m, Output m) => Game -> m ()
-                continuePlay game = do
-                    T.write $ (show (current game)) ++ "'s turn: "
-                    ms <- T.input
-                    case ms of
-                        Nothing -> playGame game
-                        (Just input) -> 
-                            if input == "exit" then return () else 
-                                if input == "printlog" then (printLog game) else do
-                                    case (getNextMove input) of
-                                        Nothing -> do
-                                                    T.write "Invalid input\n"
-                                                    playGame game
-                                        (Just move) -> case (runStateT (handleTurn move) game) of
-                                                        Left s -> do
-                                                                    T.write $ "Uh-oh: " ++ s ++ "\n"
-                                                                    playGame game
-                                                        Right (_, game') -> playGame game'
+                        where
+
+                        continuePlay :: (Input m, Output m) => Game -> m ()
+                        continuePlay game = do
+                            printb ((show (current game)) ++ "'s turn: \n") doPrint
+                            ms <- T.input
+                            case ms of
+                                Nothing -> playGame game False
+                                (Just input) -> 
+                                    if input == "exit" then return () else 
+                                        if input == "printlog" then (printLog game) else do
+                                            case (getNextMove input) of
+                                                Nothing -> do
+                                                            printb "Invalid input\n" True
+                                                            playGame game False
+                                                (Just move) -> case (runStateT (handleTurn move) game) of
+                                                                Left s -> do
+                                                                            printb ("Uh-oh: " ++ s ++ "\n") True
+                                                                            playGame game False
+                                                                Right (_, game') -> playGame game' True
+                
 
 playGameFromList :: (Input m, Output m) => Game -> [String] -> m ()
-playGameFromList game [] = playGame game
+playGameFromList game [] = playGame game True
 playGameFromList game (input:xs) = do
                                     case (checkGameStatus game) of 
                                         WhiteWins -> T.write ""
@@ -84,7 +89,7 @@ playGameFromList game (input:xs) = do
                                                                     (Just move) -> case (runStateT (handleTurn move) game) of
                                                                                     Left s -> do
                                                                                                 T.write ""
-                                                                                                playGame game
+                                                                                                playGame game True
                                                                                     Right (_, game') -> playGameFromList game' xs
 
                                                 

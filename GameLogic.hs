@@ -22,7 +22,7 @@ data Piece = P Player PieceType deriving (Eq, Show)
 type Board = Map Location Piece
 data Move = Move {src :: Location, dest :: Location} deriving (Eq, Show)
 data Game = Game { board :: Board, current :: Player, moveLog :: [Move]}
-data GameStatus = BlackWins | WhiteWins | Checked | Tie | Playing
+data GameStatus = BlackWins | WhiteWins | Checked | Tie | Playing deriving (Eq, Show)
 type ChessBoard = StateT Game (Either String)
 
 ------------------------------------------------------------------------- 
@@ -48,28 +48,6 @@ initialGame = Game (Map.fromList pos) White []
                         (Loc 5 7, P Black Pawn), (Loc 6 7, P Black Pawn),
                         (Loc 7 7, P Black Pawn), (Loc 8 7, P Black Pawn)]
                         
-castleGame :: Game
-castleGame = Game (Map.fromList pos) White []
-                where
-                pos :: [(Location, Piece)]
-                pos =  [(Loc 1 1, P White Rook),
-                        (Loc 5 1, P White King),  
-                        (Loc 8 1, P White Rook),
-                        (Loc 1 8, P Black Rook), 
-                        (Loc 5 8, P Black King), 
-                        (Loc 8 8, P Black Rook)
-                        ]
-                        
-promoteGame :: Game
-promoteGame = Game (Map.fromList pos) White []
-                where
-                pos :: [(Location, Piece)]
-                pos =  [(Loc 1 7, P White Pawn),
-                        (Loc 5 1, P White King),  
-                        (Loc 5 8, P Black King), 
-                        (Loc 8 2, P Black Pawn)
-                        ]
-
 -------------------------------------------------------------------------
 
 -- throws error inside the state monad ChessBoard
@@ -529,10 +507,3 @@ gameLost White = BlackWins
 gameLost Black = WhiteWins
 
 -------------------------------------------------------------------------
-
-
--- handle special cases like castling, pawn conversion, en-passant etc
--- also handle scenario when king moves itself to a position where it can
--- be directly killed (use isSafeToMoveForKing)
-
---current bugs: pawns can capture non-diagonally
