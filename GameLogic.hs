@@ -234,7 +234,7 @@ handleSpecialCases move = do
                                         Nothing -> 
                                             if not (x1 == x2)
                                             then doEnPassant cl s d
-                                            else promotePawn cl s d
+                                            else moveStraight cl s d
                                                 
                                         (Just (P clDest _)) -> 
                                             if clDest == cl
@@ -249,7 +249,6 @@ handleSpecialCases move = do
 
                         where
 
-                        -- does king move two steps? - allow this in validMove as well (undefined)
                         isCastling :: Location -> Location -> Bool
                         isCastling (Loc x1 y1) (Loc x2 y2) = (y1==y2) && (abs (x1-x2)==2)
 
@@ -284,27 +283,30 @@ handleSpecialCases move = do
                                                 else throwError $ "Invalid move for King"
                                             _  -> throwError $ "Can't castle when there are pieces in the way!"
                                           
-                        promotePawn :: Player -> Location -> Location -> ChessBoard Bool
-                        promotePawn cl (Loc x1 y1) (Loc x2 y2) = do 
-                                        game <- S.get
+                        moveStraight :: Player -> Location -> Location -> ChessBoard Bool
+                        moveStraight cl s@(Loc x1 y1) d@(Loc x2 y2) = do
                                         movePieceOnce move
-                                        --REFACTOR THIS 
-                                        if (cl == Black && y2 == 1) then 
-                                            do 
-                                                S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
-                                                game <- S.get
-                                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                                return True
-                                        else if (cl == White && y2 == 8) then 
-                                            do 
-                                                S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
-                                                game <- S.get
-                                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                                return True
-                                        else do 
-                                                return True
-                                        --END REFACTOR
-                                        --return True
+                                        case (cl, y2) of
+                                            (Black, 1) -> promoteBlackPawn s d
+                                            (White, 8) -> promoteWhitePawn s d  
+                                            otherwise  -> return True
+
+                        promoteBlackPawn :: Location -> Location -> ChessBoard Bool
+                        promoteBlackPawn (Loc x1 y1) (Loc x2 y2) = do 
+                                game <- S.get
+                                S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
+                                game <- S.get
+                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
+                                return True
+
+                        promoteWhitePawn :: Location -> Location -> ChessBoard Bool
+                        promoteWhitePawn (Loc x1 y1) (Loc x2 y2) = do 
+                                game <- S.get
+                                S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
+                                game <- S.get
+                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
+                                return True
+
                         doEnPassant :: Player -> Location -> Location -> ChessBoard Bool
                         doEnPassant cl (Loc x1 y1) (Loc x2 y2) = do
                             game <- S.get
@@ -337,11 +339,8 @@ handleSpecialCases move = do
                                      else throwError $ "Invalid move for Pawn"
 -------------------------------------------------------------------------
 
--- look for checkmate cases / tie cases
-
--- assuming that the king will never be removed - a checkmate case
+-- The king will never be removed - a checkmate case
 -- will be reported as win and the game should end there itself.
--- so before making a move, check whether its a checkmate
 
 -- it's my turn ....
 -- have i been checked?
