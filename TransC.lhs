@@ -24,13 +24,6 @@ date: November 29, 2017
 > instance Input IO where
 >    input = Just <$> getLine
 
-> -- | Wait for some input to appear, and when it does, repeat it.
-> echo :: (Input m, Output m) => m ()
-> echo = do ms <- input
->           case ms of
->                    Just str -> write str >> write "\n"
->                    Nothing  -> echo
-
 > type FakeIO = S.State FakeState
 
 > data FakeState = FS
@@ -61,12 +54,3 @@ date: November 29, 2017
 >       initState = FS { fsWrite = DL.empty, fsInput = inputs }
 
 
-> testEcho :: Test
-> testEcho = runFakeIO echo
->              [Nothing, Nothing, Just "hello"] ~?=
->              ["hello", "\n"]
-
-> testEcho2 :: Test
-> testEcho2 = runFakeIO (echo >> echo)
->               [Just "hello", Nothing, Just "CIS 552"] ~?=
->               ["hello", "\n", "CIS 552", "\n"]
