@@ -25,7 +25,7 @@ import TransC
 
 -------------------------------------------------------------------------
 castleGame :: Game
-castleGame = Game (Map.fromList pos) White []
+castleGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 1 1, P White Rook),
@@ -37,7 +37,7 @@ castleGame = Game (Map.fromList pos) White []
                         ]
                         
 promoteGame :: Game
-promoteGame = Game (Map.fromList pos) White []
+promoteGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 1 7, P White Pawn),
@@ -47,7 +47,7 @@ promoteGame = Game (Map.fromList pos) White []
                         ]
 
 bishopGame :: Game
-bishopGame = Game (Map.fromList pos) White []
+bishopGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 3 3, P White Bishop),
@@ -57,7 +57,7 @@ bishopGame = Game (Map.fromList pos) White []
                         ]
                       
 rookGame :: Game
-rookGame = Game (Map.fromList pos) White []
+rookGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 3 3, P White Rook),
@@ -67,7 +67,7 @@ rookGame = Game (Map.fromList pos) White []
                         ]
 
 queenGame :: Game
-queenGame = Game (Map.fromList pos) White []
+queenGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 3 3, P White Queen),

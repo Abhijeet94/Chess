@@ -21,14 +21,14 @@ data PieceType = King | Queen | Bishop | Knight | Rook | Pawn deriving (Eq, Show
 data Piece = P Player PieceType deriving (Eq, Show)
 type Board = Map Location Piece
 data Move = Move {src :: Location, dest :: Location} deriving (Eq, Show)
-data Game = Game { board :: Board, current :: Player, moveLog :: [Move]}
+data Game = Game { board :: Board, current :: Player, moveLog :: [Move], promotedPc :: (Maybe PieceType)}
 data GameStatus = BlackWins | WhiteWins | Checked | Tie | Playing deriving (Eq, Show)
 type ChessBoard = StateT Game (Either String)
 
 ------------------------------------------------------------------------- 
 
 initialGame :: Game
-initialGame = Game (Map.fromList pos) White []
+initialGame = Game (Map.fromList pos) White [] Nothing
                 where
                 pos :: [(Location, Piece)]
                 pos =  [(Loc 1 1, P White Rook), (Loc 2 1, P White Knight), 
@@ -124,9 +124,9 @@ otherPlayer Black = White
 updateBoard :: Piece -> Move -> ChessBoard ()
 updateBoard p move = do
                         game <- S.get
-                        S.put $ Game (Map.delete (src move) (board game)) (current game) (move : (moveLog game))
+                        S.put $ game { board = (Map.delete (src move) (board game)), moveLog = (move : (moveLog game)) }
                         game <- S.get
-                        S.put $ Game (Map.insert (dest move) p (board game)) (current game) (moveLog game)
+                        S.put $ game { board = (Map.insert (dest move) p (board game))}
 
 -------------------------------------------------------------------------
 
@@ -145,7 +145,7 @@ movePiece move = do
                         then do
                             isKingSafeAfterMove
                             game <- S.get
-                            S.put $ Game (board game) (otherPlayer (current game)) (moveLog game)
+                            S.put $ game { current = (otherPlayer (current game))}
                         else do
                             game <- S.get
                             specialMove <- handleSpecialCases move
@@ -267,15 +267,15 @@ handleSpecialCases move = do
                                                     --REFACTOR THIS 
                                                     if (cl == Black && y2 == 1) then 
                                                         do 
-                                                            S.put $ Game (Map.insert (Loc x2 y2) (P Black Queen) (board game)) (current game) (moveLog game)
+                                                            S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
                                                             game <- S.get
-                                                            S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
+                                                            S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
                                                             return True
                                                     else if (cl == White && y2 == 8) then 
                                                         do 
-                                                            S.put $ Game (Map.insert (Loc x2 y2) (P White Queen) (board game)) (current game) (moveLog game)
+                                                            S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
                                                             game <- S.get
-                                                            S.put $ Game (Map.delete (Loc x1 y1) (board game)) (current game) (moveLog game)
+                                                            S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
                                                             return True
                                                     else do 
                                                             return True
@@ -374,7 +374,7 @@ isSafeMoveAvailableForKing game = any (isSafeToMoveForKing game) (kingAvailableM
 
 -- can the king move safely to the given location
 isSafeToMoveForKing :: Game -> Location -> Bool
-isSafeToMoveForKing game loc = not $ isCheck $ Game moveKing (current game) (moveLog game)
+isSafeToMoveForKing game loc = not $ isCheck $ game { board = moveKing }
                 where
                 moveKing :: Board
                 moveKing = Map.insert loc (P (current game) King) (Map.delete (kingLocation game) (board game))
@@ -508,7 +508,7 @@ canSomePieceDefendKing game = any (tryMove game) sameColorLocations
 
 -- Change player in game to try configurations for check etc
 cp :: Game -> Game
-cp game = Game (board game) (otherPlayer $ current game) (moveLog game)
+cp game = game { current = (otherPlayer $ current game) }
 
 -- used before isCheck. One needs to worried about being
 -- in check only if the other player has already not lost.
