@@ -229,58 +229,13 @@ handleSpecialCases move = do
                                 (P cl King, (s, d)) -> if isCastling s d
                                                        then doCastlingIfAllowed s d
                                                        else return False
-                                (P cl Pawn, ((Loc x1 y1), (Loc x2 y2))) -> 
+                                (P cl Pawn, (s@(Loc x1 y1), d@(Loc x2 y2))) -> 
                                     case (Map.lookup (dest move) (board game)) of
                                         Nothing -> 
                                             if not (x1 == x2)
-                                            then 
-                                              case cl of --en passant
-                                                Black -> 
-                                                    if (y2 == 3) then
-                                                        case (Map.lookup (Loc x2 y1) (board game)) of
-                                                            Just (P White Pawn) -> 
-                                                                if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
-                                                                   movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
-                                                                    do
-                                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
-                                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
-                                                                        return True
-                                                                else throwError $ "Invalid move for Pawn"
-                                                            _ -> throwError $ "Invalid move for Pawn"
-                                                    else throwError $ "Invalid move for Pawn"
-                                                White -> 
-                                                    if (y2 == 6) then
-                                                        case (Map.lookup (Loc x2 y1) (board game)) of
-                                                            Just (P Black Pawn) -> 
-                                                                if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
-                                                                    movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
-                                                                    do
-                                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
-                                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
-                                                                        return True
-                                                                else throwError $ "Invalid move for Pawn"
-                                                            _ -> throwError $ "Invalid move for Pawn"
-                                                     else throwError $ "Invalid move for Pawn"
-                                            else 
-                                                do 
-                                                    movePieceOnce move
-                                                    --REFACTOR THIS 
-                                                    if (cl == Black && y2 == 1) then 
-                                                        do 
-                                                            S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
-                                                            game <- S.get
-                                                            S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                                            return True
-                                                    else if (cl == White && y2 == 8) then 
-                                                        do 
-                                                            S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
-                                                            game <- S.get
-                                                            S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                                            return True
-                                                    else do 
-                                                            return True
-                                                    --END REFACTOR
-                                                    --return True
+                                            then doEnPassant cl s d
+                                            else promotePawn cl s d
+                                                
                                         (Just (P clDest _)) -> 
                                             if clDest == cl
                                             then throwError $ "Invalid move for Pawn"
@@ -290,46 +245,96 @@ handleSpecialCases move = do
                                                         movePieceOnce move
                                                         return True
 
-                                -- undefined - handle other special cases
                                 otherwise -> return False
 
--- does king move two steps? - allow this in validMove as well (undefined)
-isCastling :: Location -> Location -> Bool
-isCastling (Loc x1 y1) (Loc x2 y2) = (y1==y2) && (abs (x1-x2)==2)
+                        where
 
-doCastlingIfAllowed :: Location -> Location -> ChessBoard Bool
-doCastlingIfAllowed (Loc x1 y1) (Loc x2 y2) = 
-    do
-        game <- S.get
-        if (x1 < x2) then -- king-side castling
-            case ((Map.lookup (Loc (x1 + 1) y1) (board game)),
-                  (Map.lookup (Loc (x1 + 2) y1) (board game)),
-                  (Map.lookup (Loc (x1 + 3) y1) (board game))) of
-                    (Nothing, Nothing, Just (P _ Rook)) -> 
-                        if ((getMoveCount (Loc (x1 + 3) y1) (moveLog game) == 0) && 
-                          (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
+                        -- does king move two steps? - allow this in validMove as well (undefined)
+                        isCastling :: Location -> Location -> Bool
+                        isCastling (Loc x1 y1) (Loc x2 y2) = (y1==y2) && (abs (x1-x2)==2)
+
+                        doCastlingIfAllowed :: Location -> Location -> ChessBoard Bool
+                        doCastlingIfAllowed (Loc x1 y1) (Loc x2 y2) = 
                             do
-                                movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
-                                movePieceOnce $ Move (Loc (x1+3) y1) (Loc (x2-1) y2)
-                                return True
-                        else throwError $ "Invalid move for King"
-                    _  -> throwError $ "Can't castle when there are pieces in the way!"
-        else case ((Map.lookup (Loc (x1 - 1) y1) (board game)),
-                  (Map.lookup (Loc (x1 - 2) y1) (board game)),
-                  (Map.lookup (Loc (x1 - 3) y1) (board game)),
-                  (Map.lookup (Loc (x1 - 4) y1) (board game))) of
-                    (Nothing, Nothing, Nothing, Just (P _ Rook)) -> 
-                        if ((getMoveCount (Loc (x1 - 4) y1) (moveLog game) == 0) && 
-                           (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
-                            do
-                                movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
-                                movePieceOnce $ Move (Loc (x1-4) y1) (Loc (x2+1) y2)
-                                return True
-                        else throwError $ "Invalid move for King"
-                    _  -> throwError $ "Can't castle when there are pieces in the way!"
+                                game <- S.get
+                                if (x1 < x2) then -- king-side castling
+                                    case ((Map.lookup (Loc (x1 + 1) y1) (board game)),
+                                          (Map.lookup (Loc (x1 + 2) y1) (board game)),
+                                          (Map.lookup (Loc (x1 + 3) y1) (board game))) of
+                                            (Nothing, Nothing, Just (P _ Rook)) -> 
+                                                if ((getMoveCount (Loc (x1 + 3) y1) (moveLog game) == 0) && 
+                                                  (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
+                                                    do
+                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
+                                                        movePieceOnce $ Move (Loc (x1+3) y1) (Loc (x2-1) y2)
+                                                        return True
+                                                else throwError $ "Invalid move for King"
+                                            _  -> throwError $ "Can't castle when there are pieces in the way!"
+                                else case ((Map.lookup (Loc (x1 - 1) y1) (board game)),
+                                          (Map.lookup (Loc (x1 - 2) y1) (board game)),
+                                          (Map.lookup (Loc (x1 - 3) y1) (board game)),
+                                          (Map.lookup (Loc (x1 - 4) y1) (board game))) of
+                                            (Nothing, Nothing, Nothing, Just (P _ Rook)) -> 
+                                                if ((getMoveCount (Loc (x1 - 4) y1) (moveLog game) == 0) && 
+                                                   (getMoveCount (Loc x1 y1) (moveLog game) == 0)) then 
+                                                    do
+                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y2)
+                                                        movePieceOnce $ Move (Loc (x1-4) y1) (Loc (x2+1) y2)
+                                                        return True
+                                                else throwError $ "Invalid move for King"
+                                            _  -> throwError $ "Can't castle when there are pieces in the way!"
                                           
-
-                        
+                        promotePawn :: Player -> Location -> Location -> ChessBoard Bool
+                        promotePawn cl (Loc x1 y1) (Loc x2 y2) = do 
+                                        game <- S.get
+                                        movePieceOnce move
+                                        --REFACTOR THIS 
+                                        if (cl == Black && y2 == 1) then 
+                                            do 
+                                                S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
+                                                game <- S.get
+                                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
+                                                return True
+                                        else if (cl == White && y2 == 8) then 
+                                            do 
+                                                S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
+                                                game <- S.get
+                                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
+                                                return True
+                                        else do 
+                                                return True
+                                        --END REFACTOR
+                                        --return True
+                        doEnPassant :: Player -> Location -> Location -> ChessBoard Bool
+                        doEnPassant cl (Loc x1 y1) (Loc x2 y2) = do
+                            game <- S.get
+                            case cl of --en passant
+                                Black -> 
+                                    if (y2 == 3) then
+                                        case (Map.lookup (Loc x2 y1) (board game)) of
+                                            Just (P White Pawn) -> 
+                                                if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
+                                                   movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
+                                                    do
+                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                        return True
+                                                else throwError $ "Invalid move for Pawn"
+                                            _ -> throwError $ "Invalid move for Pawn"
+                                    else throwError $ "Invalid move for Pawn"
+                                White -> 
+                                    if (y2 == 6) then
+                                        case (Map.lookup (Loc x2 y1) (board game)) of
+                                            Just (P Black Pawn) -> 
+                                                if (getMoveCount (Loc x2 y1) (moveLog game) == 1 &&
+                                                    movedLastTurn (Loc x2 y1) (moveLog game) == True) then 
+                                                    do
+                                                        movePieceOnce $ Move (Loc x1 y1) (Loc x2 y1)
+                                                        movePieceOnce $ Move (Loc x2 y1) (Loc x2 y2)
+                                                        return True
+                                                else throwError $ "Invalid move for Pawn"
+                                            _ -> throwError $ "Invalid move for Pawn"
+                                     else throwError $ "Invalid move for Pawn"
 -------------------------------------------------------------------------
 
 -- look for checkmate cases / tie cases
