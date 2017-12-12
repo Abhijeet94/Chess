@@ -90,7 +90,7 @@ playGameTest game (input:xs) = do
                                                   Right (_, game') -> playGameTest game' xs
 
 playGameTest2 :: Game -> [String] -> Board
-playGameTest2 game inputArray = gameStringToBoard (runFakeIO (playGame game) (map Just inputArray)) 1 8 (Map.empty)
+playGameTest2 game inputArray = gameStringToBoard (extractLastGame (runFakeIO (playGame game) (map Just inputArray)) [] []) 1 8 (Map.empty)
 
 gameStringToBoard :: [String] -> Int -> Int -> Board -> Board
 gameStringToBoard [] _ _ bd = bd
@@ -129,6 +129,15 @@ notPiece str = if str == "BK " || str == "BQ " ||
                   str == " x "
                then False
                else True
+
+extractLastGame :: [String] -> [String] -> [String] -> [String]
+extractLastGame [] res res2 = res
+extractLastGame (x:xs) res res2 = if x == endString
+                              then extractLastGame xs res2 []
+                              else extractLastGame xs res (res2 ++ [x])                
+
+endString :: String
+endString = "   A   B   C   D   E   F   G   H \n"
 
 -- ALL TESTS
 allTests :: Test
@@ -191,27 +200,27 @@ tPawn1Step :: Test
 tPawn1Step = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 3) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 6) b
-             ] where b = board (playGameTest initialGame ["E2 E3","D7 D6"])
+             ] where b =  (playGameTest2 initialGame ["E2 E3","D7 D6"])
                     
 
 tPawn2Step :: Test
 tPawn2Step = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 4) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest initialGame ["E2 E4","D7 D5"])
+             ] where b = (playGameTest2 initialGame ["E2 E4","D7 D5"])
 
 tPawnNo2StepAfterFirstMove :: Test
 tPawnNo2StepAfterFirstMove = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 4) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest initialGame ["E2 E4", "D7 D5",
+             ] where b = (playGameTest2 initialGame ["E2 E4", "D7 D5",
                                                           "E4 E6","D5 D3"])
 
 tPawnEnPassant :: Test
 tPawnEnPassant = TestList [
                 Nothing ~?= Map.lookup (Loc 4 5) b,
                 Just (P White Pawn) ~?= Map.lookup (Loc 4 6) b
-             ] where b = board (playGameTest initialGame ["E2 E4","F7 F5",
+             ] where b = (playGameTest2 initialGame ["E2 E4","F7 F5",
                                                           "E4 E5","D7 D5",
                                                           "E5 D6"])
 
@@ -221,40 +230,40 @@ tPawnEnPassantFailure = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 5) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 5) b,
                 Nothing ~?= Map.lookup (Loc 4 6) b
-             ] where b = board (playGameTest initialGame ["E2 E4","D7 D5",
+             ] where b = (playGameTest2 initialGame ["E2 E4","D7 D5",
                                                           "E4 E5","F7 F5",
                                                           "E5 D6"])
 tPawnNoBackwardsOrSideways :: Test
 tPawnNoBackwardsOrSideways = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 4) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest initialGame ["E2 E4","D7 D5",
+             ] where b = (playGameTest2 initialGame ["E2 E4","D7 D5",
                                                           "E4 E3","D5 D6"])
 
 tPawnNoSideways :: Test
 tPawnNoSideways = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 4) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest initialGame ["E2 E4","D7 D5",
+             ] where b = (playGameTest2 initialGame ["E2 E4","D7 D5",
                                                           "E4 D4","D5 E5"])
                         
 tPawnXDiag :: Test
 tPawnXDiag = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest initialGame ["E2 E4","D7 D5",
+             ] where b = (playGameTest2 initialGame ["E2 E4","D7 D5",
                                                           "E4 D5"])
                                                           
 tPawnNoDiagIfNoX :: Test
 tPawnNoDiagIfNoX = TestList [
                 Just (P White Pawn) ~?= Map.lookup (Loc 5 2) b,
                 Just (P Black Pawn) ~?= Map.lookup (Loc 4 7) b
-             ] where b = board (playGameTest initialGame ["E2 D3","D7 E6"])
+             ] where b = (playGameTest2 initialGame ["E2 D3","D7 E6"])
                                                          
 tPawnPromotion :: Test
 tPawnPromotion = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 1 8) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 8 1) b
-             ] where b = board (playGameTest promoteGame ["A7 A8","Queen", "H2 H1", "Queen"])
+             ] where b = (playGameTest2 promoteGame ["A7 A8","Queen", "H2 H1", "Queen"])
         
 -- knight tests        
 knightTests :: Test
@@ -265,19 +274,19 @@ tKnightMove1 :: Test
 tKnightMove1 = TestList [
                 Just (P White Knight) ~?= Map.lookup (Loc 3 3) b,
                 Just (P Black Knight) ~?= Map.lookup (Loc 6 6) b
-             ] where b = board (playGameTest initialGame ["B1 C3","G8 F6"])
+             ] where b = (playGameTest2 initialGame ["B1 C3","G8 F6"])
 
 tKnightMove2 :: Test
 tKnightMove2 = TestList [
                 Just (P White Knight) ~?= Map.lookup (Loc 2 5) b,
                 Just (P Black Knight) ~?= Map.lookup (Loc 7 4) b
-             ] where b = board (playGameTest initialGame ["B1 C3","G8 F6",
+             ] where b = (playGameTest2 initialGame ["B1 C3","G8 F6",
                                                           "C3 B5","F6 G4"]) 
 tKnightMove3 :: Test
 tKnightMove3 = TestList [
                 Just (P White Knight) ~?= Map.lookup (Loc 4 4) b,
                 Just (P Black Knight) ~?= Map.lookup (Loc 5 5) b
-             ] where b = board (playGameTest initialGame ["B1 C3","G8 F6",
+             ] where b = (playGameTest2 initialGame ["B1 C3","G8 F6",
                                                           "C3 B5","F6 G4",
                                                           "B5 D4","G4 E5"]) 
                                                           
@@ -285,7 +294,7 @@ tKnightMove4 :: Test
 tKnightMove4 = TestList [
                 Just (P White Knight) ~?= Map.lookup (Loc 5 6) b,
                 Just (P Black Knight) ~?= Map.lookup (Loc 4 3) b
-             ] where b = board (playGameTest initialGame ["B1 C3","G8 F6",
+             ] where b = (playGameTest2 initialGame ["B1 C3","G8 F6",
                                                           "C3 B5","F6 G4",
                                                           "B5 D4","G4 E5",
                                                           "D4 E6","E5 D3"]) 
@@ -299,31 +308,31 @@ tBishopMoveNW :: Test
 tBishopMoveNW = TestList [
                 Just (P White Bishop) ~?= Map.lookup (Loc 1 5) b,
                 Just (P Black Bishop) ~?= Map.lookup (Loc 1 8) b
-             ] where b = board (playGameTest bishopGame ["C3 A5","C6 A8"]) 
+             ] where b = (playGameTest2 bishopGame ["C3 A5","C6 A8"]) 
 
 tBishopMoveNE :: Test
 tBishopMoveNE = TestList [
                 Just (P White Bishop) ~?= Map.lookup (Loc 4 4) b,
                 Just (P Black Bishop) ~?= Map.lookup (Loc 4 7) b
-             ] where b = board (playGameTest bishopGame ["C3 D4","C6 D7"]) 
+             ] where b = (playGameTest2 bishopGame ["C3 D4","C6 D7"]) 
 
 tBishopMoveSW :: Test
 tBishopMoveSW = TestList [
                 Just (P White Bishop) ~?= Map.lookup (Loc 1 1) b,
                 Just (P Black Bishop) ~?= Map.lookup (Loc 1 4) b
-             ] where b = board (playGameTest bishopGame ["C3 A1","C6 A4"]) 
+             ] where b = (playGameTest2 bishopGame ["C3 A1","C6 A4"]) 
 
 tBishopMoveSE :: Test
 tBishopMoveSE = TestList [
                 Just (P White Bishop) ~?= Map.lookup (Loc 4 2) b,
                 Just (P Black Bishop) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest bishopGame ["C3 D2","C6 D5"]) 
+             ] where b = (playGameTest2 bishopGame ["C3 D2","C6 D5"]) 
 
 tBishopCantGoThroughSameColor :: Test
 tBishopCantGoThroughSameColor = TestList [
                 Just (P White Bishop) ~?= Map.lookup (Loc 3 3) b,
                 Just (P Black Bishop) ~?= Map.lookup (Loc 3 6) b
-             ] where b = board (playGameTest bishopGame ["E1 D2","E8 D7",
+             ] where b = (playGameTest2 bishopGame ["E1 D2","E8 D7",
                                                          "C3 E1","C6 E8"]) 
 
 -- rook tests
@@ -341,25 +350,25 @@ tRookMoveS :: Test
 tRookMoveS = TestList [
                 Just (P White Rook) ~?= Map.lookup (Loc 3 1) b,
                 Just (P Black Rook) ~?= Map.lookup (Loc 3 3) b
-             ] where b = board (playGameTest rookGame ["C3 C1","C6 C3"]) 
+             ] where b = (playGameTest2 rookGame ["C3 C1","C6 C3"]) 
 
 tRookMoveW :: Test
 tRookMoveW = TestList [
                 Just (P White Rook) ~?= Map.lookup (Loc 1 3) b,
                 Just (P Black Rook) ~?= Map.lookup (Loc 1 6) b
-             ] where b = board (playGameTest rookGame ["C3 A3","C6 A6"]) 
+             ] where b = (playGameTest2 rookGame ["C3 A3","C6 A6"]) 
 
 tRookMoveE :: Test
 tRookMoveE = TestList [
                 Just (P White Rook) ~?= Map.lookup (Loc 6 3) b,
                 Just (P Black Rook) ~?= Map.lookup (Loc 6 6) b
-             ] where b = board (playGameTest rookGame ["C3 F3","C6 F6"]) 
+             ] where b = (playGameTest2 rookGame ["C3 F3","C6 F6"]) 
 
 tRookCantGoThroughSameColor :: Test
 tRookCantGoThroughSameColor = TestList [
                 Just (P White Rook) ~?= Map.lookup (Loc 3 1) b,
                 Just (P Black Rook) ~?= Map.lookup (Loc 3 8) b
-             ] where b = board (playGameTest rookGame ["C3 C1","C6 C8",
+             ] where b = (playGameTest2 rookGame ["C3 C1","C6 C8",
                                                        "C1 F1","C8 F8"]) 
 
 
@@ -375,43 +384,43 @@ tQueenMoveN :: Test
 tQueenMoveN = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 3 5) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 3 8) b
-             ] where b = board (playGameTest queenGame ["C3 C5","C6 C8"]) 
+             ] where b = (playGameTest2 queenGame ["C3 C5","C6 C8"]) 
 
 tQueenMoveS :: Test
 tQueenMoveS = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 3 1) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 3 3) b
-             ] where b = board (playGameTest queenGame ["C3 C1","C6 C3"]) 
+             ] where b = (playGameTest2 queenGame ["C3 C1","C6 C3"]) 
 
 tQueenMoveW :: Test
 tQueenMoveW = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 1 3) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 1 6) b
-             ] where b = board (playGameTest queenGame ["C3 A3","C6 A6"]) 
+             ] where b = (playGameTest2 queenGame ["C3 A3","C6 A6"]) 
 
 tQueenMoveE :: Test
 tQueenMoveE = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 6 3) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 6 6) b
-             ] where b = board (playGameTest queenGame ["C3 F3","C6 F6"]) 
+             ] where b = (playGameTest2 queenGame ["C3 F3","C6 F6"]) 
              
 tQueenMoveNW :: Test
 tQueenMoveNW = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 1 5) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 1 8) b
-             ] where b = board (playGameTest queenGame ["C3 A5","C6 A8"]) 
+             ] where b = (playGameTest2 queenGame ["C3 A5","C6 A8"]) 
 
 tQueenMoveNE :: Test
 tQueenMoveNE = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 4 4) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 4 7) b
-             ] where b = board (playGameTest queenGame ["C3 D4","C6 D7"]) 
+             ] where b = (playGameTest2 queenGame ["C3 D4","C6 D7"]) 
 
 tQueenMoveSW :: Test
 tQueenMoveSW = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 1 1) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 1 4) b
-             ] where b = board (playGameTest queenGame ["C3 A1","C6 A4"]) 
+             ] where b = (playGameTest2 queenGame ["C3 A1","C6 A4"]) 
 
 tQueenMoveSE :: Test
 tQueenMoveSE = TestList [
@@ -423,7 +432,7 @@ tQueenCantGoThroughSameColor :: Test
 tQueenCantGoThroughSameColor = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 3 1) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 3 8) b
-             ] where b = board (playGameTest queenGame ["C3 C1","C6 C8",
+             ] where b = (playGameTest2 queenGame ["C3 C1","C6 C8",
                                                        "C1 F1","C8 F8"]) 
                                                        
 -- king tests
@@ -438,7 +447,7 @@ tKingMoveAllDirs :: Test
 tKingMoveAllDirs = TestList [
                     Just (P White King) ~?= Map.lookup (Loc 4 1) b,
                     Just (P Black King) ~?= Map.lookup (Loc 4 8) b
-                 ] where b = board (playGameTest castleGame ["E1 E2","E8 E7",
+                 ] where b = (playGameTest2 castleGame ["E1 E2","E8 E7",
                                                              "E2 D3","E7 D6",
                                                              "D3 C2","D6 C7",
                                                              "C2 C1","C7 C8",
@@ -448,13 +457,13 @@ tKingCantMoveWhenBlocked :: Test
 tKingCantMoveWhenBlocked = TestList [
                     Just (P White King) ~?= Map.lookup (Loc 4 2) b,
                     Just (P Black King) ~?= Map.lookup (Loc 4 7) b
-                 ] where b = board (playGameTest bishopGame ["E1 D2","E8 D7",
+                 ] where b = (playGameTest2 bishopGame ["E1 D2","E8 D7",
                                                              "D2 C3","D7 C6"]) 
 
 tKingCantMoveIntoCheck :: Test
 tKingCantMoveIntoCheck = TestList [
                     Just (P White King) ~?= Map.lookup (Loc 5 2) b
-                 ] where b = board (playGameTest bishopGame ["E1 E2","E8 D7",
+                 ] where b = (playGameTest2 bishopGame ["E1 E2","E8 D7",
                                                              "E2 F3"]) 
 
 tKingCheck1 :: Test
@@ -473,7 +482,7 @@ tKingCastleL = TestList [
                     Just (P White Rook) ~?= Map.lookup (Loc 4 1) b,
                     Just (P Black King) ~?= Map.lookup (Loc 3 8) b,
                     Just (P Black Rook) ~?= Map.lookup (Loc 4 8) b
-                 ] where b = board (playGameTest castleGame ["E1 C1","E8 C8"]) 
+                 ] where b = (playGameTest2 castleGame ["E1 C1","E8 C8"]) 
 
 tKingCastleR :: Test
 tKingCastleR = TestList [
@@ -481,7 +490,7 @@ tKingCastleR = TestList [
                     Just (P White Rook) ~?= Map.lookup (Loc 6 1) b,
                     Just (P Black King) ~?= Map.lookup (Loc 7 8) b,
                     Just (P Black Rook) ~?= Map.lookup (Loc 6 8) b
-                 ] where b = board (playGameTest castleGame ["E1 G1","E8 G8"]) 
+                 ] where b = (playGameTest2 castleGame ["E1 G1","E8 G8"]) 
 
 
 tKingNoCastleIfMoved :: Test
@@ -490,7 +499,7 @@ tKingNoCastleIfMoved = TestList [
                     Just (P White Rook) ~?= Map.lookup (Loc 1 1) b,
                     Just (P Black King) ~?= Map.lookup (Loc 5 8) b,
                     Just (P Black Rook) ~?= Map.lookup (Loc 1 8) b
-                 ] where b = board (playGameTest castleGame ["E1 E2","E8 E7",
+                 ] where b = (playGameTest2 castleGame ["E1 E2","E8 E7",
                                                              "E2 E1","E7 E8",
                                                              "E1 C1","E8 C8"]) 
 
@@ -500,14 +509,14 @@ tKingNoCastleIfRookMoved = TestList [
                     Just (P White Rook) ~?= Map.lookup (Loc 8 1) b,
                     Just (P Black King) ~?= Map.lookup (Loc 5 8) b,
                     Just (P Black Rook) ~?= Map.lookup (Loc 8 8) b
-                 ] where b = board (playGameTest castleGame ["H1 H2","H8 H7",
+                 ] where b = (playGameTest2 castleGame ["H1 H2","H8 H7",
                                                              "H2 H1","H7 H8",
                                                              "E1 G1","E8 G8"]) 
 
 tCantMoveOtherPiecesIfChecked :: Test
 tCantMoveOtherPiecesIfChecked = TestList [
                     Just (P White Bishop) ~?= Map.lookup (Loc 3 3) b
-                 ] where b = board (playGameTest bishopGame ["E1 E2","C6 F3",
+                 ] where b = (playGameTest2 bishopGame ["E1 E2","C6 F3",
                                                              "C3 D4"])
 
 -- tests to check for endgame scenarios 
