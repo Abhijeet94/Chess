@@ -10,9 +10,6 @@ import Test.QuickCheck (Arbitrary(..),Gen(..),Property(..),OrderedList(..),
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Text.PrettyPrint (Doc)
-import qualified Text.PrettyPrint as PP
-
 import Control.Applicative (Alternative(..),liftA3)
 import Control.Monad (liftM, liftM2)
 
@@ -79,28 +76,35 @@ queenGame = Game (Map.fromList pos) White [] Nothing
 -- this basically simulates playing a game except instead of printing
 -- it returns a Game so we can test the implementation rather than 
 -- the interface
+-- This test does not handle all the special cases of playGame (which
+-- is done in playGameTest2)
 playGameTest :: Game -> [String] -> Game
 playGameTest game [] = game
 playGameTest game (input:xs) = do
-                                case (getNextMove input) of
-                                  Nothing -> do
-                                              playGameTest game (input:xs)
-                                  (Just move) -> case (runStateT (handleTurn move) game) of
-                                                  Left s -> game
-                                                  Right (_, game') -> playGameTest game' xs
+                    case (getNextMove input) of
+                      Nothing -> do
+                                  playGameTest game (input:xs)
+                      (Just move) -> case (runStateT (handleTurn move) game) of
+                                      Left s -> game
+                                      Right (_, game') -> playGameTest game' xs
 
+-- This will simulate the entire game leveraging the Fake IO in playGame 
+-- function. This will basically convert the resulting string of boards
+-- to a Board of the last chess board in the output array.
 playGameTest2 :: Game -> [String] -> Board
-playGameTest2 game inputArray = gameStringToBoard (extractLastGame (runFakeIO (playGame game) (map Just inputArray)) [] []) 1 8 (Map.empty)
+playGameTest2 game inputArray = gameStringToBoard (extractLastGame 
+        (runFakeIO (playGame game) (map Just inputArray)) [] []) 1 8 (Map.empty)
 
 gameStringToBoard :: [String] -> Int -> Int -> Board -> Board
 gameStringToBoard [] _ _ bd = bd
 gameStringToBoard (x:xs) i j bd = if x == "\n"
-                                then gameStringToBoard (xs) 1 (j-1) bd
-                                else if notPiece x
-                                      then gameStringToBoard (xs) i j bd
-                                      else case (stringToPc x) of
-                                            Nothing -> gameStringToBoard (xs) (i+1) j bd
-                                            (Just pc) -> gameStringToBoard (xs) (i+1) (j) (Map.insert (Loc i j) (pc) bd) 
+        then gameStringToBoard (xs) 1 (j-1) bd
+        else if notPiece x
+              then gameStringToBoard (xs) i j bd
+              else case (stringToPc x) of
+                    Nothing -> gameStringToBoard (xs) (i+1) j bd
+                    (Just pc) -> gameStringToBoard (xs) (i+1) (j) 
+                                                  (Map.insert (Loc i j) (pc) bd) 
 
 
 stringToPc :: String  -> (Maybe Piece)
@@ -138,6 +142,8 @@ extractLastGame (x:xs) res res2 = if x == endString
 
 endString :: String
 endString = "   A   B   C   D   E   F   G   H \n"
+
+--------------------------------------------------------------------------------
 
 -- ALL TESTS
 allTests :: Test
@@ -344,7 +350,7 @@ tRookMoveN :: Test
 tRookMoveN = TestList [
                 Just (P White Rook) ~?= Map.lookup (Loc 3 5) b,
                 Just (P Black Rook) ~?= Map.lookup (Loc 3 8) b
-             ] where b = board (playGameTest rookGame ["C3 C5","C6 C8"]) 
+             ] where b = (playGameTest2 rookGame ["C3 C5","C6 C8"]) 
 
 tRookMoveS :: Test
 tRookMoveS = TestList [
@@ -426,7 +432,7 @@ tQueenMoveSE :: Test
 tQueenMoveSE = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 4 2) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 4 5) b
-             ] where b = board (playGameTest queenGame ["C3 D2","C6 D5"]) 
+             ] where b = (playGameTest2 queenGame ["C3 D2","C6 D5"]) 
 
 tQueenCantGoThroughSameColor :: Test
 tQueenCantGoThroughSameColor = TestList [
@@ -589,13 +595,13 @@ tInitialBoard :: Test
 tInitialBoard = runFakeIO (printBoard (board initialGame)) [] ~?= ["8 ","BR "," ","BN "," ","BB "," ","BQ "," ","BK "," ","BB "," ","BN "," ","BR ","\n","7 ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP "," ","BP ","\n","6 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","4 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP "," ","WP ","\n","1 ","WR "," ","WN "," ","WB "," ","WQ "," ","WK "," ","WB "," ","WN "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
 
 tGameSimple :: Test
-tGameSimple = runFakeIO (printBoard (board (playGameTest initialGame gameSimple))) [] ~?= ["8 ","BR "," "," x "," ","BB "," ","BQ "," ","BK "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," ","BP "," ","BP "," ","BP "," "," x "," ","BP "," ","BP "," ","BP ","\n","6 ","BP "," "," x "," ","BN "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","5 "," x "," ","WB "," "," x "," "," x "," ","BP "," "," x "," "," x "," "," x ","\n","4 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," ","WN "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," ","WP ","\n","1 ","WR "," ","WN "," ","WB "," ","WQ "," ","WK "," "," x "," "," x "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
+tGameSimple = runFakeIO (printBoard ((playGameTest2 initialGame gameSimple))) [] ~?= ["8 ","BR "," "," x "," ","BB "," ","BQ "," ","BK "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," ","BP "," ","BP "," ","BP "," "," x "," ","BP "," ","BP "," ","BP ","\n","6 ","BP "," "," x "," ","BN "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","5 "," x "," ","WB "," "," x "," "," x "," ","BP "," "," x "," "," x "," "," x ","\n","4 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," ","WN "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," ","WP ","\n","1 ","WR "," ","WN "," ","WB "," ","WQ "," ","WK "," "," x "," "," x "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
 
 tGameMate :: Test
-tGameMate = runFakeIO (printBoard (board (playGameTest initialGame gameMate))) [] ~?= ["8 ","BR "," ","BN "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 ","BP "," ","BB "," ","BP "," "," x "," "," x "," ","WQ "," "," x "," "," x ","\n","6 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BK ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BQ "," ","WR ","\n","4 "," x "," "," x "," "," x "," ","WP "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," "," x "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," "," x "," "," x "," "," x ","\n","   A   B   C   D   E   F   G   H \n"]
+tGameMate = runFakeIO (printBoard ((playGameTest2 initialGame gameMate))) [] ~?= ["8 ","BR "," ","BN "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 ","BP "," ","BB "," ","BP "," "," x "," "," x "," ","WQ "," "," x "," "," x ","\n","6 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BK ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BQ "," ","WR ","\n","4 "," x "," "," x "," "," x "," ","WP "," ","WP "," "," x "," "," x "," "," x ","\n","3 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," "," x "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," "," x "," "," x "," "," x ","\n","   A   B   C   D   E   F   G   H \n"]
 
 tGameTie :: Test
-tGameTie = runFakeIO (printBoard (board (playGameTest initialGame gameTie))) [] ~?= ["8 "," x "," "," x "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," "," x "," "," x "," "," x "," ","BP "," "," x "," ","BP "," ","BQ ","\n","6 "," x "," "," x "," "," x "," "," x "," ","WQ "," ","BP "," ","BK "," ","BR ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BP ","\n","4 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","WP ","\n","3 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," ","WB "," ","WN "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
+tGameTie = runFakeIO (printBoard ((playGameTest2 initialGame gameTie))) [] ~?= ["8 "," x "," "," x "," "," x "," "," x "," "," x "," ","BB "," ","BN "," ","BR ","\n","7 "," x "," "," x "," "," x "," "," x "," ","BP "," "," x "," ","BP "," ","BQ ","\n","6 "," x "," "," x "," "," x "," "," x "," ","WQ "," ","BP "," ","BK "," ","BR ","\n","5 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","BP ","\n","4 "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," "," x "," ","WP ","\n","3 "," x "," "," x "," "," x "," "," x "," ","WP "," "," x "," "," x "," "," x ","\n","2 ","WP "," ","WP "," ","WP "," ","WP "," "," x "," ","WP "," ","WP "," "," x ","\n","1 ","WR "," ","WN "," ","WB "," "," x "," ","WK "," ","WB "," ","WN "," ","WR ","\n","   A   B   C   D   E   F   G   H \n"]
 
 -- full games
 tGameFirstMove :: Test
