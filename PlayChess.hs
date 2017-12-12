@@ -40,16 +40,41 @@ playGame game = do
                             Nothing -> return()
                             (Just input) -> 
                                 if input == "exit" then return () else 
-                                    if input == "printlog" then (printLog game) else do
-                                        case (getNextMove input) of
-                                            Nothing -> do
-                                                        T.write "Invalid input\n" 
-                                                        playGame game 
-                                            (Just move) -> case (runStateT (handleTurn move) game) of
-                                                            Left s -> do
-                                                                        T.write ("Uh-oh: " ++ s ++ "\n") 
-                                                                        playGame game 
-                                                            Right (_, game') -> playGame game' 
+                                if input == "printlog" then (printLog game) else do
+                                case (getNextMove input) of
+                                    Nothing -> do
+                                                T.write "Invalid input\n" 
+                                                playGame game 
+                                    (Just move) -> case (runStateT (handleTurn move) game) of
+                                                    Left "getPawnPromotionPiece" -> handlePawnPromotion game move
+                                                    Left s -> do
+                                                                T.write ("Uh-oh: " ++ s ++ "\n") 
+                                                                playGame game 
+                                                    Right (_, game') -> playGame game' 
+
+                    handlePawnPromotion game move = do
+                        T.write "Enter piece for pawn promotion: \n" 
+                        inputPc <- T.input
+                        case inputPc of
+                          Nothing -> return ()
+                          (Just pawnPromPcInput) -> case (toPiece pawnPromPcInput) of
+                                        Nothing -> do
+                                          T.write "Invalid Piece\n"
+                                          playGame game
+                                        pc -> do
+                                                let game2 = setChessBoardPiece pc game
+                                                case (runStateT (handleTurn move) game2) of
+                                                  Left s -> do
+                                                              T.write ("Uh-oh: " ++ s ++ "\n") 
+                                                              playGame game 
+                                                  Right (_, game') -> do
+                                                                      let game2' =  setChessBoardPiece Nothing game'
+                                                                      playGame game2' 
+
+                    setChessBoardPiece :: (Maybe PieceType) -> Game -> Game
+                    setChessBoardPiece pc game = case (runStateT (setPromotedPieceInGame pc) game) of
+                                                  Left s -> game
+                                                  Right (_, game') -> game'
              
 -------------------------------------------------------------------------
 
@@ -73,7 +98,13 @@ getNextMove (a:m:x:b:n:xs) = if (wr a') && (wr b') &&
                              wr i = i > 0 && i < 9
 getNextMove _ = Nothing
 
-
+toPiece :: String -> (Maybe PieceType)
+toPiece "Queen" = Just Queen
+toPiece "Bishop" = Just Bishop
+toPiece "Knight" = Just Knight
+toPiece "Rook" = Just Rook
+toPiece "Pawn" = Just Pawn
+toPiece _ = Nothing
 -------------------------------------------------------------------------
 
 -- try to do this with foldm / fold

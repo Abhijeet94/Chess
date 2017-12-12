@@ -89,6 +89,47 @@ playGameTest game (input:xs) = do
                                                   Left s -> game
                                                   Right (_, game') -> playGameTest game' xs
 
+playGameTest2 :: Game -> [String] -> Board
+playGameTest2 game inputArray = gameStringToBoard (runFakeIO (playGame game) (map Just inputArray)) 1 8 (Map.empty)
+
+gameStringToBoard :: [String] -> Int -> Int -> Board -> Board
+gameStringToBoard [] _ _ bd = bd
+gameStringToBoard (x:xs) i j bd = if x == "\n"
+                                then gameStringToBoard (xs) 1 (j-1) bd
+                                else if notPiece x
+                                      then gameStringToBoard (xs) i j bd
+                                      else case (stringToPc x) of
+                                            Nothing -> gameStringToBoard (xs) (i+1) j bd
+                                            (Just pc) -> gameStringToBoard (xs) (i+1) (j) (Map.insert (Loc i j) (pc) bd) 
+
+
+stringToPc :: String  -> (Maybe Piece)
+stringToPc "BK "  = Just (P Black King)
+stringToPc "BQ "  = Just (P Black Queen)
+stringToPc "BB "  = Just (P Black Bishop)
+stringToPc "BN "  = Just (P Black Knight)
+stringToPc "BR "  = Just (P Black Rook)
+stringToPc "BP "  = Just (P Black Pawn)
+stringToPc "WK "  = Just (P White King)
+stringToPc "WQ "  = Just (P White Queen)
+stringToPc "WB "  = Just (P White Bishop)
+stringToPc "WN "  = Just (P White Knight)
+stringToPc "WR "  = Just (P White Rook)
+stringToPc "WP "  = Just (P White Pawn)
+stringToPc _      = Nothing
+
+                            
+notPiece :: String -> Bool
+notPiece str = if str == "BK " || str == "BQ " || 
+                  str == "BB " || str == "BN " || 
+                  str == "BR " || str == "BP " || 
+                  str == "WK " || str == "WQ " || 
+                  str == "WB " || str == "WN " || 
+                  str == "WR " || str == "WP " || 
+                  str == " x "
+               then False
+               else True
+
 -- ALL TESTS
 allTests :: Test
 allTests = TestList [vMoveTests,pawnTests,
@@ -213,7 +254,7 @@ tPawnPromotion :: Test
 tPawnPromotion = TestList [
                 Just (P White Queen) ~?= Map.lookup (Loc 1 8) b,
                 Just (P Black Queen) ~?= Map.lookup (Loc 8 1) b
-             ] where b = board (playGameTest promoteGame ["A7 A8","H2 H1"])
+             ] where b = board (playGameTest promoteGame ["A7 A8","Queen", "H2 H1", "Queen"])
         
 -- knight tests        
 knightTests :: Test

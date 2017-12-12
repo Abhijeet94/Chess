@@ -286,26 +286,20 @@ handleSpecialCases move = do
                         moveStraight :: Player -> Location -> Location -> ChessBoard Bool
                         moveStraight cl s@(Loc x1 y1) d@(Loc x2 y2) = do
                                         movePieceOnce move
-                                        case (cl, y2) of
-                                            (Black, 1) -> promoteBlackPawn s d
-                                            (White, 8) -> promoteWhitePawn s d  
-                                            otherwise  -> return True
+                                        if (y2 == 1) || (y2 == 8) 
+                                            then promotePawn cl s d
+                                            else return True
 
-                        promoteBlackPawn :: Location -> Location -> ChessBoard Bool
-                        promoteBlackPawn (Loc x1 y1) (Loc x2 y2) = do 
+                        promotePawn :: Player -> Location -> Location -> ChessBoard Bool
+                        promotePawn cl (Loc x1 y1) (Loc x2 y2) = do 
                                 game <- S.get
-                                S.put $ game { board = (Map.insert (Loc x2 y2) (P Black Queen) (board game)) }
-                                game <- S.get
-                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                return True
-
-                        promoteWhitePawn :: Location -> Location -> ChessBoard Bool
-                        promoteWhitePawn (Loc x1 y1) (Loc x2 y2) = do 
-                                game <- S.get
-                                S.put $ game { board = (Map.insert (Loc x2 y2) (P White Queen) (board game)) }
-                                game <- S.get
-                                S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
-                                return True
+                                case (promotedPc game) of
+                                    Nothing -> throwError $ "getPawnPromotionPiece"
+                                    (Just pc) -> do
+                                        S.put $ game { board = (Map.insert (Loc x2 y2) (P cl pc) (board game)) }
+                                        game <- S.get
+                                        S.put $ game { board = (Map.delete (Loc x1 y1) (board game)) }
+                                        return True
 
                         doEnPassant :: Player -> Location -> Location -> ChessBoard Bool
                         doEnPassant cl (Loc x1 y1) (Loc x2 y2) = do
@@ -337,6 +331,18 @@ handleSpecialCases move = do
                                                 else throwError $ "Invalid move for Pawn"
                                             _ -> throwError $ "Invalid move for Pawn"
                                      else throwError $ "Invalid move for Pawn"
+-------------------------------------------------------------------------
+
+setPromotedPieceInGame :: (Maybe PieceType) -> ChessBoard ()
+setPromotedPieceInGame Nothing = do
+                            game <- S.get
+                            S.put $ game {promotedPc = Nothing}
+                            return ()
+setPromotedPieceInGame pc = do
+                            game <- S.get
+                            S.put $ game {promotedPc = pc}
+                            return ()
+
 -------------------------------------------------------------------------
 
 -- The king will never be removed - a checkmate case
