@@ -61,8 +61,9 @@ getPiece :: Location -> ChessBoard Piece
 getPiece loc = do
                 game <- S.get
                 case (Map.lookup loc (board game)) of
-                    Nothing -> throwError $ "No piece found at location " ++ show loc
-                    (Just x) -> return x
+                  Nothing -> throwError ("No piece found at location " ++ 
+                                          show loc)
+                  (Just x) -> return x
 
 -------------------------------------------------------------------------                  
                     
@@ -88,7 +89,8 @@ handleTurn move = do
                         then movePiece move
                         else throwError $ "Invalid move for " ++ (show pt)
                       else 
-                        throwError $ "It is " ++ (show $ current game) ++ "'s turn"
+                        throwError ("It is " ++ (show $ current game) ++ 
+                                    "'s turn")
 
 -------------------------------------------------------------------------
 
@@ -157,39 +159,39 @@ isKingSafeAfterMove = do
 movePiece :: Move -> ChessBoard ()
 movePiece move = do
                     if (src move) == (dest move)
-                        then do
-                          isKingSafeAfterMove
-                          game <- S.get
-                          S.put $ game { current = (otherPlayer (current game))}
+                      then do
+                        isKingSafeAfterMove
+                        game <- S.get
+                        S.put $ game { current = (otherPlayer (current game))}
+                      else do
+                        game <- S.get
+                        specialMove <- hSpecialCases move
+                        if specialMove then 
+                           movePiece (Move (dest move) (dest move)) 
                         else do
-                          game <- S.get
-                          specialMove <- hSpecialCases move
-                          if specialMove then 
-                             movePiece (Move (dest move) (dest move)) 
-                          else do
-                          nextImmLoc <- getNextImmLocation move
-                          case (Map.lookup nextImmLoc (board game)) of 
-                            Nothing -> movePieceOnce $ Move (src move) nextImmLoc
-                            (Just (P clDest _)) -> 
-                                if (clDest == (current game))
-                                  then throwError $ "Invalid move"
-                                else if (not (nextImmLoc == dest move))
-                                       then throwError $ "Invalid move"
-                                     else 
-                                       movePieceOnce $ Move (src move) nextImmLoc
-                          movePiece $ Move nextImmLoc (dest move)
+                        nextImmLoc <- getNextImmLocation move
+                        case (Map.lookup nextImmLoc (board game)) of 
+                          Nothing -> movePieceOnce $ Move (src move) nextImmLoc
+                          (Just (P clDest _)) -> 
+                              if (clDest == (current game))
+                              then throwError $ "Invalid move"
+                              else if (not (nextImmLoc == dest move))
+                                   then throwError $ "Invalid move"
+                                   else 
+                                     movePieceOnce $ Move (src move) nextImmLoc
+                        movePiece $ Move nextImmLoc (dest move)
 
 -------------------------------------------------------------------------
 
 movePieceOnce :: Move -> ChessBoard ()
 movePieceOnce move = do
-                        pSrc <- getPiece (src move)
-                        game <- S.get
-                        case (Map.lookup (dest move) (board game)) of
-                          Nothing -> updateBoard pSrc move
-                          (Just (P clDest _)) -> if clDest == (current game) 
-                                                   then throwError $ "Invalid move"
-                                                   else updateBoard pSrc move
+                       pSrc <- getPiece (src move)
+                       game <- S.get
+                       case (Map.lookup (dest move) (board game)) of
+                         Nothing -> updateBoard pSrc move
+                         (Just (P clDest _)) -> if clDest == (current game) 
+                                                then throwError $ "Invalid move"
+                                                else updateBoard pSrc move
 
 -------------------------------------------------------------------------
 
@@ -210,32 +212,37 @@ getINLoc (P _ Bishop) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
 getINLoc (P _ Rook) l1@(Loc x1 y1) l2@(Loc x2 y2) =  Loc x' y'
                                                         where x' = if x2 > x1
                                                                     then x1 + 1
-                                                                    else if x2 == x1
-                                                                        then x1
-                                                                        else x1 - 1
+                                                                    else 
+                                                                     if x2 == x1
+                                                                     then x1
+                                                                     else x1 - 1
                                                               y' = if y2 > y1
                                                                     then y1 + 1
-                                                                    else if y2 == y1
-                                                                        then y1
-                                                                        else y1 - 1                                                                                
+                                                                    else 
+                                                                     if y2 == y1
+                                                                     then y1
+                                                                     else y1 - 1                                                                                
 getINLoc (P _ King) l1@(Loc x1 y1) l2@(Loc x2 y2) =  l2
 getINLoc (P _ Knight) l1@(Loc x1 y1) l2@(Loc x2 y2) =  l2
 getINLoc (P _ Pawn) l1@(Loc x1 y1) l2@(Loc x2 y2) =  if x1 /= x2
-                                                        then l2
-                                                        else if (abs (y2 - y1)) == 1
-                                                            then l2
-                                                            else Loc x1 (y1 + (y2-y1))
+                                                     then l2
+                                                     else 
+                                                       if (abs (y2 - y1)) == 1
+                                                       then l2
+                                                       else Loc x1 (y1 + (y2-y1))
 getINLoc (P _ Queen) l1@(Loc x1 y1) l2@(Loc x2 y2) = Loc x' y'
                                                         where x' = if x2 > x1
-                                                                    then x1 + 1
-                                                                    else if x2 == x1
-                                                                        then x1
-                                                                        else x1 - 1
+                                                                   then x1 + 1
+                                                                   else 
+                                                                    if x2 == x1
+                                                                    then x1
+                                                                    else x1 - 1
                                                               y' = if y2 > y1
                                                                     then y1 + 1
-                                                                    else if y2 == y1
-                                                                        then y1
-                                                                        else y1 - 1                                                                      
+                                                                    else 
+                                                                     if y2 == y1
+                                                                     then y1
+                                                                     else y1 - 1                                                                      
 
 -------------------------------------------------------------------------
 
@@ -249,20 +256,19 @@ hSpecialCases move = do
                                                    else return False
                             (P cl Pawn, (s@(Loc x1 y1), d@(Loc x2 y2))) -> 
                                 case (Map.lookup (dest move) (board game)) of
-                                    Nothing -> 
-                                        if not (x1 == x2)
-                                        then doEnPassant cl s d
-                                        else moveStraight cl s d move
-                                            
-                                    (Just (P clDest _)) -> 
-                                        if clDest == cl
-                                        then throwError $ "Invalid move for Pawn"
-                                        else if (x1 == x2)
-                                               then throwError $ "Invalid move for Pawn"
-                                               else do 
-                                                    movePieceOnce move
-                                                    return True
-
+                                 Nothing -> 
+                                     if not (x1 == x2)
+                                     then doEnPassant cl s d
+                                     else moveStraight cl s d move     
+                                 (Just (P clDest _)) -> 
+                                     if clDest == cl
+                                     then throwError $ "Invalid move for Pawn"
+                                     else 
+                                       if (x1 == x2)
+                                       then throwError $ "Invalid move for Pawn"
+                                       else do 
+                                         movePieceOnce move
+                                         return True
                             otherwise -> return False
 
 isCastling :: Location -> Location -> Bool
@@ -405,9 +411,11 @@ kingHasSafeMove game = any (kingCanMoveSafe game) (kingAvailableMoves game)
 -- can the king move safely to the given location
 kingCanMoveSafe :: Game -> Location -> Bool
 kingCanMoveSafe game loc = not $ isCheck $ game { board = moveKing }
-                where
-                moveKing :: Board
-                moveKing = Map.insert loc (P (current game) King) (Map.delete (kingLocation game) (board game))
+    where
+    moveKing :: Board
+    moveKing = Map.insert loc (P (current game) King) 
+                              (Map.delete (kingLocation game) 
+                              (board game))
 
 -- the set of possible moves a king can take
 kingAvailableMoves :: Game -> [Location]
@@ -418,14 +426,14 @@ kingAvailableMoves game = foldr (appendIfValid (kingLocation game)) [] possibleS
 
     appendIfValid :: Location -> (Int, Int) -> [Location] -> [Location]
     appendIfValid (Loc x y) (a, b) lst = if ((x+a)>0 && (x+a)<9) &&
-                                             ((y+b)>0 && (y+b)<9) &&
-                                             sameColorPieceNotPresent (Loc (x+a) (y+b))
-                                          then (Loc (x+a) (y+b)) : lst
-                                          else lst
-    sameColorPieceNotPresent :: Location -> Bool
-    sameColorPieceNotPresent loc = case (Map.lookup loc (board game)) of
-                                    (Just (P cl _)) | (cl == (current game)) -> False
-                                    otherwise -> True                                                                      
+                                            ((y+b)>0 && (y+b)<9) &&
+                                            noSameColorPiece (Loc (x+a) (y+b))
+                                         then (Loc (x+a) (y+b)) : lst
+                                         else lst
+    noSameColorPiece :: Location -> Bool
+    noSameColorPiece loc = case (Map.lookup loc (board game)) of
+                            (Just (P cl _)) | (cl == (current game)) -> False
+                            otherwise -> True                                                                      
 
 kingLocation :: Game -> Location
 kingLocation game = Map.foldrWithKey (kingFunc) (Loc 1 1) (board game)
@@ -441,8 +449,8 @@ somePieceCanMove game = any (tryMove game) sameColorLocations
 
     canMove :: Game -> Location -> Location -> Bool
     canMove game loc loc' = case (runStateT (handleTurn (Move loc loc')) game) of
-                        Left _ -> False
-                        otherwise -> True
+                                Left _ -> False
+                                otherwise -> True
 
     nextMoveSet :: Game -> Location -> [Location]
     nextMoveSet game loc = filter (\(Loc x y) -> x>0 && x<9 && y<9 && y>0)
